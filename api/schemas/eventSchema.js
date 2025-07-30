@@ -10,11 +10,11 @@ const eventSchema = Joi.object({
       'any.only': 'eventType must be one of: page_view, user_joined, user_disconnect, log, user_message'
     }),
   userId: Joi.string()
-    .pattern(/^user\d{1,3}$/)
+    .pattern(/^\d+$/)
     .required()
     .messages({
       'any.required': 'userId is required',
-      'string.pattern.base': 'userId must be in format: user001-user999'
+      'string.pattern.base': 'userId must be numeric digits only'
     }),
   timestamp: Joi.string()
     .isoDate()
