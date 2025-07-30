@@ -1,10 +1,12 @@
 import dotenv from 'dotenv';
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import webhookRoutes from './routes/webhook';
 import eventsRoutes from './routes/events';
 import indexRoutes from './routes/index';
+import { errorHandler, notFoundHandler } from './middleware/errorHandling';
+import { requestLogger } from './middleware/logging';
 
 // Load environment variables
 dotenv.config();
@@ -18,10 +20,7 @@ app.use(express.json());
 app.use(morgan('combined'));
 
 // Request logging middleware
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
-});
+app.use(requestLogger);
 
 // Mount routes
 app.use('/webhook', webhookRoutes);
@@ -29,22 +28,10 @@ app.use('/events', eventsRoutes);
 app.use('/', indexRoutes);
 
 // Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error'
-  });
-});
+app.use(errorHandler);
 
 // 404 handler
-app.use('*', (_req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found'
-  });
-});
+app.use('*', notFoundHandler);
 
 // Start server
 app.listen(PORT, () => {
