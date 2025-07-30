@@ -60,7 +60,26 @@ def main():
                 except requests.exceptions.RequestException as e:
                     print(f"Webhook error: {e}")
             
-            time.sleep(random.randint(10, 30))
+            sleep_time = random.randint(10, 20)
+            
+            # Send invalid data if sleep time is >= 15
+            if sleep_time >= 15:
+                invalid_event = {
+                    "eventType": "invalid_type",
+                    "userId": "invalid_user",
+                    "timestamp": "invalid-timestamp"
+                }
+                print(json.dumps(invalid_event, indent=2))
+                print("Sending INVALID event to webhook (sleep time >= 15)")
+                
+                if webhook_url:
+                    try:
+                        response = requests.post(webhook_url, json=invalid_event, timeout=5)
+                        print(f"Invalid event response: {response.status_code}")
+                    except requests.exceptions.RequestException as e:
+                        print(f"Invalid event error: {e}")
+            
+            time.sleep(sleep_time)
             
         except KeyboardInterrupt:
             break
