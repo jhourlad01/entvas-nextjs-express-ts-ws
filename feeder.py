@@ -17,15 +17,15 @@ def sigint_handler(sig, frame):
     running = False
 
 def generate_random_event():
-    event_types = ["page_view", "user_joined", "user_disconnect", "log", "error"]
+    event_types = ["page_view", "user_joined", "user_disconnect", "log", "user_message"]
     
-    user_id = f"user{random.randint(1, 999):03d}"
+    user_id = str(random.randint(1, 999))
     
-    pages = ["/home", "/products", "/about", "/contact", "/login", "/dashboard", "/profile"]
+    pages = ["home", "profile", "settings", "dashboard"]
     
-    browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"]
+    browsers = ["chrome", "firefox", "safari", "edge"]
     
-    timestamp = datetime.utcnow()
+    timestamp = datetime.now()
     
     event = {
         "eventType": random.choice(event_types),
