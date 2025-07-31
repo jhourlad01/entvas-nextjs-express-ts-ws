@@ -1,79 +1,358 @@
 # Real-Time Analytics Dashboard
 
-Web application that receives webhook data and displays live analytics charts.
+A production-ready web application that receives webhook data and displays live analytics charts with real-time updates.
 
-## Quick Start
+## 🌐 Live Application
 
+**Production URLs:**
+- **Dashboard**: https://entvas-dashboard.vercel.app
+- **API**: https://entvas-api.onrender.com
+- **GitHub Repository**: https://github.com/jhourlad01/entvas-nextjs-express-ts-ws
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+
+### Running the Application
 ```bash
-git clone git@github.com:jhourlad01/entvas-nextjs-express-ts-ws.git
+# Clone the repository
+git clone https://github.com/jhourlad01/entvas-nextjs-express-ts-ws.git
 cd entvas-nextjs-express-ts-ws
-docker-compose up
+
+# Start all services
+docker-compose up -d
+
+# Access the application
+# Dashboard: http://localhost
+# API: http://localhost/health
 ```
 
-**Access**: Dashboard: http://localhost:3000 | API: http://localhost:8000
+## 📡 API Usage
 
-## API Testing
+### Endpoints
 
-### Manual Testing
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+| `POST` | `/webhook` | Receive webhook events |
+| `GET` | `/events` | Get filtered events |
+| `GET` | `/events/stats` | Get event statistics |
+
+### API Testing Examples
+
+#### 1. Health Check
 ```bash
-# Send webhook
-curl -X POST http://localhost:8000/webhook \
+curl http://localhost/health
+```
+
+#### 2. Send Webhook Event
+```bash
+curl -X POST http://localhost/webhook \
   -H "Content-Type: application/json" \
   -d '{
     "eventType": "page_view",
-    "userId": "user123", 
+    "userId": "123",
     "timestamp": "2024-01-01T12:00:00Z",
-    "metadata": {"page": "/home"}
+    "metadata": {"page": "home"}
   }'
-
-# Get events
-curl "http://localhost:8000/events?timeRange=hour"
 ```
 
-### Automated Testing
+#### 3. Get Events (Last Hour)
 ```bash
-# Generate test data with feeder.py
-python3 feeder.py
-
-# Or with Docker
-docker-compose up feeder
+curl "http://localhost/events?filter=hour"
 ```
 
-## Deployment
-
-**Live URLs**
-- Dashboard: https://entvas-dashboard.vercel.app
-- API: https://entvas-api.onrender.com
-- Repo: https://github.com/jhourlad01/entvas-nextjs-express-ts-ws
-
-
-
-**Environment Variables**
+#### 4. Get Event Statistics
 ```bash
-# API
-DATABASE_URL=postgresql://user:pass@host:5432/db
-
-# Client  
-NEXT_PUBLIC_WS_URL=wss://entvas-api.onrender.com
+curl "http://localhost/events/stats?filter=day"
 ```
 
-## Tech Stack
-
-- **Backend**: Node.js, Express, TypeScript, Prisma, PostgreSQL
-- **Frontend**: Next.js 15, Material-UI, Chart.js
-- **Real-time**: WebSocket
-
-
-
-## Troubleshooting
-
+#### 5. Get Events with Different Filters
 ```bash
-# Docker
+# Last hour
+curl "http://localhost/events?filter=hour"
+
+# Last day
+curl "http://localhost/events?filter=day"
+
+# Last week
+curl "http://localhost/events?filter=week"
+```
+
+### Postman Collection
+Import this collection to test all endpoints:
+```json
+{
+  "info": {
+    "name": "Entvas API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost/health"
+      }
+    },
+    {
+      "name": "Send Webhook",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost/webhook",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventType\": \"page_view\",\n  \"userId\": \"123\",\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"metadata\": {\"page\": \"home\"}\n}"
+        }
+      }
+    }
+  ]
+}
+```
+
+## 🏗️ Architecture & Design Patterns
+
+### Backend Architecture
+
+#### 1. **MVC Pattern**
+- **Models**: Prisma ORM with PostgreSQL
+- **Views**: JSON API responses
+- **Controllers**: Express route handlers
+
+#### 2. **Repository Pattern**
+```typescript
+// EventService abstracts data access
+export class EventService {
+  static async addEvent(event: Event): Promise<void>
+  static async getEvents(filter: TimeFilter): Promise<Event[]>
+  static async getStatistics(filter: TimeFilter): Promise<Statistics>
+}
+```
+
+#### 3. **Middleware Pattern**
+- Authentication middleware
+- Validation middleware (Joi)
+- Logging middleware
+- CORS middleware
+
+#### 4. **Observer Pattern**
+- WebSocket event broadcasting
+- Real-time updates to connected clients
+
+### Frontend Architecture
+
+#### 1. **Component Pattern**
+- Reusable UI components
+- Material-UI component library
+- Custom chart components
+
+#### 2. **Custom Hooks Pattern**
+```typescript
+// useWebSocket hook for real-time data
+const { events, isConnected } = useWebSocket();
+
+// useEvents hook for data fetching
+const { events, loading, error } = useEvents();
+```
+
+#### 3. **Service Layer Pattern**
+- API client services
+- WebSocket service
+- Data transformation services
+
+### Why These Patterns?
+
+1. **MVC**: Separates concerns, makes code testable and maintainable
+2. **Repository**: Abstracts data access, enables easy testing and switching databases
+3. **Middleware**: Modular request processing, reusable across endpoints
+4. **Observer**: Enables real-time updates without polling
+5. **Component**: Reusable UI elements, consistent design
+6. **Custom Hooks**: Logic reuse, clean component code
+
+## 🗄️ Database Choice: PostgreSQL
+
+### Why PostgreSQL?
+
+1. **ACID Compliance**: Ensures data integrity for critical analytics
+2. **JSONB Support**: Flexible metadata storage for webhook events
+3. **Time-Series Performance**: Excellent for event analytics and filtering
+4. **Prisma Integration**: Type-safe database queries with excellent TypeScript support
+5. **Scalability**: Supports read replicas, partitioning, and sharding
+6. **Free Tier**: Available on Supabase, Neon, and other platforms
+
+### Database Schema
+```sql
+-- Events table with JSONB for flexible metadata
+CREATE TABLE events (
+  id SERIAL PRIMARY KEY,
+  event_type VARCHAR(50) NOT NULL,
+  user_id VARCHAR(100) NOT NULL,
+  timestamp TIMESTAMP NOT NULL,
+  metadata JSONB,
+  received_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_events_timestamp ON events(timestamp);
+CREATE INDEX idx_events_type ON events(event_type);
+CREATE INDEX idx_events_user ON events(user_id);
+```
+
+## 📈 Scaling Strategy
+
+### Current Architecture Supports:
+
+#### 1. **Horizontal Scaling**
+```yaml
+# Scale API instances
+docker-compose up --scale api=3
+
+# Scale client instances  
+docker-compose up --scale client=3
+```
+
+#### 2. **Database Scaling**
+- **Read Replicas**: Distribute read load
+- **Connection Pooling**: Efficient connection management
+- **Partitioning**: Split data by time ranges
+- **Sharding**: Distribute data across multiple databases
+
+#### 3. **WebSocket Scaling**
+- **Redis Pub/Sub**: Share WebSocket connections across instances
+- **Load Balancer**: Distribute WebSocket connections
+- **Sticky Sessions**: Maintain connection consistency
+
+#### 4. **Performance Optimizations**
+- **Nginx Caching**: Static file caching
+- **CDN**: Global content delivery
+- **Database Indexing**: Optimized queries
+- **Rate Limiting**: Prevent abuse
+
+### Scaling for 100K+ Users
+
+1. **Load Balancer**: Nginx/HAProxy for traffic distribution
+2. **Multiple API Instances**: Auto-scaling based on load
+3. **Database Clustering**: Primary + read replicas
+4. **Redis Cluster**: Session and cache management
+5. **CDN**: Global static asset delivery
+6. **Monitoring**: Prometheus + Grafana for metrics
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Runtime**: Node.js 18 with TypeScript
+- **Framework**: Express.js with middleware architecture
+- **Database**: PostgreSQL with Prisma ORM
+- **Validation**: Joi schema validation
+- **Real-time**: WebSocket with ws library
+
+### Frontend
+- **Framework**: Next.js 15 with App Router
+- **UI Library**: Material-UI (MUI) v7
+- **Charts**: Chart.js with react-chartjs-2
+- **Styling**: Emotion CSS-in-JS
+- **Real-time**: WebSocket client
+
+### DevOps
+- **Containerization**: Docker with multi-stage builds
+- **Orchestration**: Docker Compose for production
+- **Reverse Proxy**: Nginx with rate limiting
+- **Database**: PostgreSQL with persistence
+
+## 🔧 Development
+
+### Local Development
+```bash
+# Install dependencies
+cd api && npm install
+cd ../client && npm install
+
+# Run development servers
+cd api && npm run dev
+cd ../client && npm run dev
+```
+
+### Testing
+```bash
+# API tests
+cd api && npm run test
+
+# Client tests  
+cd client && npm run test
+
+# All tests
+npm run test:all
+```
+
+### Database Management
+```bash
+# Generate Prisma client
+cd api && npx prisma generate
+
+# Run migrations
+cd api && npx prisma migrate dev
+
+# Open database studio
+cd api && npx prisma studio
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+#### Docker Issues
+```bash
+# Check container status
 docker-compose ps
-docker-compose logs api
 
-# Database
-docker-compose exec api npm run db:studio
+# View logs
+docker-compose logs api
+docker-compose logs client
+
+# Rebuild containers
+docker-compose build --no-cache
 ```
+
+#### Database Issues
+```bash
+# Reset database
+docker-compose exec api npx prisma migrate reset
+
+# Check database connection
+docker-compose exec api npx prisma db push
+```
+
+#### API Issues
+```bash
+# Test API health
+curl http://localhost/health
+
+# Check API logs
+docker-compose logs api --tail=50
+```
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+---
+
+**Built with ❤️ for Senior Full Stack Developer Assessment**
 
 
