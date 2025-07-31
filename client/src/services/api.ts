@@ -38,12 +38,12 @@ class ApiService {
     return response.json();
   }
 
-  async getEventStats(filter: string = 'hour'): Promise<EventStats> {
+  async getEventStats(filter: 'hour' | 'day' | 'week' = 'hour'): Promise<EventStats> {
     const response = await this.request<{ success: boolean; data: EventStats }>(`/events/stats?filter=${filter}`);
     return response.data;
   }
 
-  async getEvents(filter: string = 'hour'): Promise<EventsResponse> {
+  async getEvents(filter: 'hour' | 'day' | 'week' = 'hour'): Promise<EventsResponse> {
     const response = await this.request<{ success: boolean; data: EventsResponse }>(`/events?filter=${filter}`);
     return response.data;
   }

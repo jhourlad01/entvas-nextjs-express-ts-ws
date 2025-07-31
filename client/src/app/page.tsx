@@ -8,6 +8,7 @@ import EventsPerMinuteChart from '@/components/dashboard/EventsPerMinuteChart';
 import TopEventTypes from '@/components/dashboard/TopEventTypes';
 import TimeFilter, { TimeRange } from '@/components/dashboard/TimeFilter';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { apiService } from '@/services/api';
 
 // Generate live data for demonstration
 const generateLiveData = (timeRange: TimeRange) => {
@@ -18,15 +19,15 @@ const generateLiveData = (timeRange: TimeRange) => {
   let intervalMinutes: number;
   
   switch (timeRange) {
-    case '1h':
+    case 'hour':
       dataPoints = 60; // 60 minutes
       intervalMinutes = 1;
       break;
-    case '24h':
+    case 'day':
       dataPoints = 24; // 24 hours
       intervalMinutes = 60;
       break;
-    case '7d':
+    case 'week':
       dataPoints = 7; // 7 days
       intervalMinutes = 1440; // 24 * 60 minutes
       break;
@@ -52,13 +53,13 @@ const generateTopEventTypes = (timeRange: TimeRange) => {
   // Adjust total based on time range
   let baseTotal: number;
   switch (timeRange) {
-    case '1h':
+    case 'hour':
       baseTotal = 1000; // Lower for 1 hour
       break;
-    case '24h':
+    case 'day':
       baseTotal = 5000; // Medium for 24 hours
       break;
-    case '7d':
+    case 'week':
       baseTotal = 25000; // Higher for 7 days
       break;
     default:
@@ -78,42 +79,120 @@ const generateTopEventTypes = (timeRange: TimeRange) => {
 };
 
 export default function Home() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('24h');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('hour');
   const [chartData, setChartData] = useState<Array<{timestamp: string; count: number}>>([]);
   const [topEventTypes, setTopEventTypes] = useState<Array<{type: string; count: number; percentage: number}>>([]);
   const [isClient, setIsClient] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Use WebSocket for real-time stats
   const { stats, connected } = useWebSocket();
 
+  // Load data from API based on time range
+  const loadData = async (timeRange: TimeRange) => {
+    try {
+      setLoading(true);
+      console.log('Loading data for time range:', timeRange);
+      
+      const [eventsResponse, statsResponse] = await Promise.all([
+        apiService.getEvents(timeRange),
+        apiService.getEventStats(timeRange)
+      ]);
+
+      console.log('API Response - Events:', eventsResponse.events.length, 'Stats:', statsResponse);
+
+      // Convert events to chart data format based on time range
+      const eventsByTime = new Map<string, number>();
+      
+      eventsResponse.events.forEach(event => {
+        const date = new Date(event.receivedAt);
+        let timeKey: string;
+        
+        switch (timeRange) {
+          case 'hour':
+            // Group by minute for hour view
+            timeKey = date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+            break;
+          case 'day':
+            // Group by hour for day view
+            timeKey = date.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+            break;
+          case 'week':
+            // Group by day for week view
+            timeKey = date.toISOString().slice(0, 10); // YYYY-MM-DD
+            break;
+          default:
+            timeKey = date.toISOString().slice(0, 16);
+        }
+        
+        eventsByTime.set(timeKey, (eventsByTime.get(timeKey) || 0) + 1);
+      });
+
+      const chartDataArray = Array.from(eventsByTime.entries()).map(([timestamp, count]) => {
+        let fullTimestamp: string;
+        
+        switch (timeRange) {
+          case 'hour':
+            fullTimestamp = timestamp + ':00.000Z';
+            break;
+          case 'day':
+            fullTimestamp = timestamp + ':00:00.000Z';
+            break;
+          case 'week':
+            fullTimestamp = timestamp + 'T00:00:00.000Z';
+            break;
+          default:
+            fullTimestamp = timestamp + ':00.000Z';
+        }
+        
+        return {
+          timestamp: fullTimestamp,
+          count
+        };
+      });
+
+      console.log('Chart data array:', chartDataArray);
+
+      // Convert stats to top event types format
+      const totalEvents = statsResponse.totalEvents;
+      const topEventTypesArray = Object.entries(statsResponse.statistics)
+        .map(([type, count]) => ({
+          type,
+          count,
+          percentage: totalEvents > 0 ? (count / totalEvents) * 100 : 0
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      setChartData(chartDataArray);
+      setTopEventTypes(topEventTypesArray);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      // Fallback to mock data on error
+      console.log('Falling back to mock data');
+      setChartData(generateLiveData(timeRange));
+      setTopEventTypes(generateTopEventTypes(timeRange));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Initialize data on client side to prevent hydration errors
   useEffect(() => {
     setIsClient(true);
-    setChartData(generateLiveData('24h'));
-    setTopEventTypes(generateTopEventTypes('24h'));
+    loadData('hour');
   }, []);
 
-  // Simulate real-time updates for charts (still using mock data for now)
+  // Load data when time range changes
   useEffect(() => {
-    if (!isClient) return; // Don't start updates until client-side
-
-    const interval = setInterval(() => {
-      // Update chart data
-      setChartData(generateLiveData(selectedTimeRange));
-      
-      // Update top event types
-      setTopEventTypes(generateTopEventTypes(selectedTimeRange));
-    }, 3000); // Update every 3 seconds for more live feel
-
-    return () => clearInterval(interval);
-  }, [selectedTimeRange, isClient]); // Add isClient to dependency array
+    if (isClient) {
+      loadData(selectedTimeRange);
+    }
+  }, [selectedTimeRange, isClient]);
 
   // Handle time range changes
   const handleTimeRangeChange = (newRange: TimeRange) => {
     setSelectedTimeRange(newRange);
-    // Immediately update data for the new time range
-    setChartData(generateLiveData(newRange));
-    setTopEventTypes(generateTopEventTypes(newRange));
   };
 
   return (
@@ -152,20 +231,7 @@ export default function Home() {
         />
       </Box>
 
-      {/* Charts Section */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mb: 4 }}>
-        {/* Events Per Minute Graph */}
-        <EventsPerMinuteChart 
-          data={stats.eventsPerMinute}
-          title="Events Per Minute (Last Hour)"
-        />
-        
-        {/* Top 5 Event Types */}
-        <TopEventTypes 
-          data={stats.topEventTypes}
-          title="Top 5 Event Types"
-        />
-      </Box>
+
 
       {/* Charts and Analytics */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -177,19 +243,21 @@ export default function Home() {
           />
         </Box>
         
-        {chartData.length === 0 ? (
+        {loading || chartData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <Typography variant="h6" color="text.secondary">Loading data...</Typography>
+            <Typography variant="h6" color="text.secondary">
+              {loading ? 'Loading data...' : `No data available (chartData.length: ${chartData.length})`}
+            </Typography>
           </Box>
         ) : (
           <>
             <EventsPerMinuteChart 
               data={chartData}
-              title={`Events per Minute (${selectedTimeRange === '1h' ? 'Last Hour' : selectedTimeRange === '24h' ? 'Last Day' : 'Last Week'})`}
+              title={`Events per Minute (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
             />
             <TopEventTypes 
               data={topEventTypes} 
-              title={`Top 5 Event Types (${selectedTimeRange === '1h' ? 'Last Hour' : selectedTimeRange === '24h' ? 'Last Day' : 'Last Week'})`}
+              title={`Top 5 Event Types (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
             />
           </>
         )}

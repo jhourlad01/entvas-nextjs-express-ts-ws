@@ -3,7 +3,7 @@
 import { Button, ButtonGroup, Card, CardContent, Typography, Box } from '@mui/material';
 import { AccessTime } from '@mui/icons-material';
 
-export type TimeRange = '1h' | '24h' | '7d';
+export type TimeRange = 'hour' | 'day' | 'week';
 
 interface TimeFilterProps {
   selectedRange: TimeRange;
@@ -17,9 +17,9 @@ export default function TimeFilter({
   title = "Time Filter" 
 }: TimeFilterProps) {
   const timeRanges = [
-    { value: '1h' as TimeRange, label: 'Last Hour' },
-    { value: '24h' as TimeRange, label: 'Last Day' },
-    { value: '7d' as TimeRange, label: 'Last Week' },
+    { value: 'hour' as TimeRange, label: 'Last Hour' },
+    { value: 'day' as TimeRange, label: 'Today' },
+    { value: 'week' as TimeRange, label: 'This Week' },
   ];
 
   return (
