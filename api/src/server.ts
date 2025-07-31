@@ -2,16 +2,19 @@ import dotenv from 'dotenv';
 import express, { Application } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { createServer } from 'http';
 import webhookRoutes from './routes/webhook';
 import eventsRoutes from './routes/events';
 import indexRoutes from './routes/index';
 import { errorHandler, notFoundHandler } from './middleware/errorHandling';
 import { requestLogger } from './middleware/logging';
+import { webSocketService } from './services/websocketService';
 
 // Load environment variables
 dotenv.config();
 
 const app: Application = express();
+const server = createServer(app);
 const PORT: number = parseInt(process.env['PORT'] || '3001', 10);
 
 // Middleware
@@ -33,9 +36,13 @@ app.use(errorHandler);
 // 404 handler
 app.use('*', notFoundHandler);
 
+// Initialize WebSocket server
+webSocketService.initialize(server);
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Server started on port ${PORT}`);
+  console.log(`[${new Date().toISOString()}] WebSocket server available at ws://localhost:${PORT}`);
   console.log(`[${new Date().toISOString()}] Available endpoints:`);
   console.log(`  POST http://localhost:${PORT}/webhook`);
   console.log(`  GET  http://localhost:${PORT}/events`);

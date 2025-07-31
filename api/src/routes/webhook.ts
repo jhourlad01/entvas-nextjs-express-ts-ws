@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { eventSchema } from '../schemas/eventSchema';
 import { validate } from '../middleware/validation';
 import { EventService } from '../services/eventService';
+import { webSocketService } from '../services/websocketService';
 import { Event, ApiResponse } from '../types';
 
 const router = Router();
@@ -20,6 +21,9 @@ router.post('/', validate(eventSchema), async (req: Request, res: Response) => {
     
     // Log event details
     await EventService.logEventDetails(event, receivedAt, 'webhook');
+    
+    // Broadcast updated stats to all connected clients
+    await webSocketService.broadcastStats();
     
     // Send success response
     const response: ApiResponse = {
