@@ -10,16 +10,16 @@ const router = Router();
  * POST /webhook - Receive and process webhook events
  * Validates incoming event data and stores it if valid
  */
-router.post('/', validate(eventSchema), (req: Request, res: Response) => {
+router.post('/', validate(eventSchema), async (req: Request, res: Response) => {
   try {
     const event: Event = req.body;
     const receivedAt = new Date();
     
     // Add event to storage
-    EventService.addEvent(event, receivedAt);
+    await EventService.addEvent(event, receivedAt);
     
     // Log event details
-    EventService.logEventDetails(event, receivedAt, 'webhook');
+    await EventService.logEventDetails(event, receivedAt, 'webhook');
     
     // Send success response
     const response: ApiResponse = {

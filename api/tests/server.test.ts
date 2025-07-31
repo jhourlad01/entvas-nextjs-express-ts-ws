@@ -48,20 +48,57 @@ describe('Server', () => {
     expect(response.body.data).toHaveProperty('timestamp');
   });
 
-  test('GET /events should return empty events array initially', async () => {
+  test('GET /events should return events array (defaults to hour filter)', async () => {
     const response = await request(app).get('/events');
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.data.events).toEqual([]);
-    expect(response.body.data.count).toBe(0);
+    expect(Array.isArray(response.body.data.events)).toBe(true);
+    expect(typeof response.body.data.count).toBe('number');
+    expect(response.body.data.filter).toBe('hour');
   });
 
-  test('GET /events/stats should return event statistics', async () => {
+  test('GET /events/stats should return event statistics (defaults to hour filter)', async () => {
     const response = await request(app).get('/events/stats');
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.data).toHaveProperty('totalEvents');
     expect(response.body.data).toHaveProperty('invalidEvents');
     expect(response.body.data).toHaveProperty('statistics');
+    expect(response.body.data.filter).toBe('hour');
+  });
+
+  test('GET /events with filter=hour should return filtered events', async () => {
+    const response = await request(app).get('/events?filter=hour');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('filter', 'hour');
+  });
+
+  test('GET /events with filter=day should return filtered events', async () => {
+    const response = await request(app).get('/events?filter=day');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('filter', 'day');
+  });
+
+  test('GET /events with filter=week should return filtered events', async () => {
+    const response = await request(app).get('/events?filter=week');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('filter', 'week');
+  });
+
+  test('GET /events with invalid filter should return 400', async () => {
+    const response = await request(app).get('/events?filter=invalid');
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Invalid filter parameter');
+  });
+
+  test('GET /events/stats with filter=hour should return filtered statistics', async () => {
+    const response = await request(app).get('/events/stats?filter=hour');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('filter', 'hour');
   });
 }); 

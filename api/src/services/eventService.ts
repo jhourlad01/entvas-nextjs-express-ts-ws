@@ -1,11 +1,11 @@
 import { Event, EventWithReceivedAt, EventStatistics, ValidationErrorDetail } from '../types';
+import prisma from './prismaService';
 
 /**
  * Service class for handling event operations
  * Implements IEventService interface for better type safety
  */
 export class EventService {
-  private static events: EventWithReceivedAt[] = [];
   private static invalidEventsCount: number = 0;
 
   /**
@@ -13,44 +13,83 @@ export class EventService {
    * @param event - The validated event data
    * @param receivedAt - Timestamp when the event was received
    */
-  public static addEvent(event: Event, receivedAt: Date): void {
-    const eventWithTimestamp: EventWithReceivedAt = {
-      ...event,
-      receivedAt
-    };
-    
-    this.events.push(eventWithTimestamp);
+  public static async addEvent(event: Event, _receivedAt: Date): Promise<void> {
+    try {
+      await prisma.event.create({
+        data: {
+          eventType: event.eventType,
+          userId: event.userId,
+          timestamp: new Date(event.timestamp),
+          metadata: event.metadata as any,
+        }
+      });
+    } catch (error) {
+      console.error('Error saving event to database:', error);
+      throw error;
+    }
   }
 
   /**
    * Retrieves all stored events
    * @returns Array of events with received timestamps
    */
-  public static getAllEvents(): EventWithReceivedAt[] {
-    return [...this.events];
+  public static async getAllEvents(): Promise<EventWithReceivedAt[]> {
+    try {
+      const events = await prisma.event.findMany({
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return events.map(event => ({
+        eventType: event.eventType as any,
+        userId: event.userId,
+        timestamp: event.timestamp.toISOString(),
+        metadata: event.metadata as any,
+        receivedAt: event.createdAt
+      }));
+    } catch (error) {
+      console.error('Error retrieving events from database:', error);
+      throw error;
+    }
   }
 
   /**
    * Returns the total count of valid events
    * @returns Number of valid events
    */
-  public static getEventCount(): number {
-    return this.events.length;
+  public static async getEventCount(): Promise<number> {
+    try {
+      return await prisma.event.count();
+    } catch (error) {
+      console.error('Error counting events:', error);
+      throw error;
+    }
   }
 
   /**
    * Calculates and returns counts of events by eventType
    * @returns Object with event type counts
    */
-  public static getEventStatistics(): EventStatistics {
-    const statistics: EventStatistics = {};
-    
-    this.events.forEach(event => {
-      const eventType = event.eventType;
-      statistics[eventType] = (statistics[eventType] || 0) + 1;
-    });
-    
-    return statistics;
+  public static async getEventStatistics(): Promise<EventStatistics> {
+    try {
+      const stats = await prisma.event.groupBy({
+        by: ['eventType'],
+        _count: {
+          eventType: true
+        }
+      });
+
+      const statistics: EventStatistics = {};
+      stats.forEach(stat => {
+        statistics[stat.eventType] = stat._count.eventType;
+      });
+
+      return statistics;
+    } catch (error) {
+      console.error('Error getting event statistics:', error);
+      throw error;
+    }
   }
 
   /**
@@ -59,27 +98,34 @@ export class EventService {
    * @param receivedAt - Timestamp when the event was received
    * @param source - Source identifier (e.g., 'webhook')
    */
-  public static logEventDetails(event: Event, receivedAt: Date, source: string): void {
-    const statistics = this.getEventStatistics();
-    
-    console.log(`[${new Date().toISOString()}] Event received from ${source}:`);
-    console.log(`  Event ID: ${event.userId}-${event.timestamp}`);
-    console.log(`  Type: ${event.eventType}`);
-    console.log(`  User ID: ${event.userId}`);
-    console.log(`  Timestamp: ${event.timestamp}`);
-    console.log(`  Received at: ${receivedAt.toISOString()}`);
-    
-    if (event.metadata) {
-      console.log('  Metadata:', event.metadata);
+  public static async logEventDetails(event: Event, receivedAt: Date, source: string): Promise<void> {
+    try {
+      const [statistics, totalCount] = await Promise.all([
+        this.getEventStatistics(),
+        this.getEventCount()
+      ]);
+      
+      console.log(`[${new Date().toISOString()}] Event received from ${source}:`);
+      console.log(`  Event ID: ${event.userId}-${event.timestamp}`);
+      console.log(`  Type: ${event.eventType}`);
+      console.log(`  User ID: ${event.userId}`);
+      console.log(`  Timestamp: ${event.timestamp}`);
+      console.log(`  Received at: ${receivedAt.toISOString()}`);
+      
+      if (event.metadata) {
+        console.log('  Metadata:', event.metadata);
+      }
+      
+      console.log('  Event Type Counts:');
+      Object.entries(statistics).forEach(([eventType, count]) => {
+        console.log(`    ${eventType}: ${count}`);
+      });
+      console.log(`  Total Events: ${totalCount}`);
+      console.log(`  Invalid Events: ${this.getInvalidEventsCount()}`);
+      console.log('---');
+    } catch (error) {
+      console.error('Error logging event details:', error);
     }
-    
-    console.log('  Event Type Counts:');
-    Object.entries(statistics).forEach(([eventType, count]) => {
-      console.log(`    ${eventType}: ${count}`);
-    });
-    console.log(`  Total Events: ${this.getEventCount()}`);
-    console.log(`  Invalid Events: ${this.getInvalidEventsCount()}`);
-    console.log('---');
   }
 
   /**

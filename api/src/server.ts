@@ -39,7 +39,9 @@ app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Available endpoints:`);
   console.log(`  POST http://localhost:${PORT}/webhook`);
   console.log(`  GET  http://localhost:${PORT}/events`);
+  console.log(`  GET  http://localhost:${PORT}/events?filter=hour|day|week`);
   console.log(`  GET  http://localhost:${PORT}/events/stats`);
+  console.log(`  GET  http://localhost:${PORT}/events/stats?filter=hour|day|week`);
   console.log(`  GET  http://localhost:${PORT}/health`);
   console.log(`  GET  http://localhost:${PORT}/`);
   console.log('---');
