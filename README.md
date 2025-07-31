@@ -1,220 +1,113 @@
-# entvas-nextjs-express-ts-ws
+# Real-Time Analytics Dashboard
 
-A full-stack real-time analytics application built with Next.js, Express, TypeScript, and PostgreSQL.
+A web application that receives data from other apps through webhooks, saves it to a database, and shows live charts and numbers on a web page that updates automatically when new data arrives.
 
-## 🏗️ Architecture
-
-This project consists of three main components:
-
-- **API Server** (`api/`) - Express.js backend with PostgreSQL database
-- **Client Application** (`client/`) - Next.js frontend dashboard
-- **Data Feeder** (`feeder.py`) - Python script for generating test data
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-
 - Node.js 18+ and npm
-- Python 3.8+
-- Docker and Docker Compose
+- PostgreSQL database
 - Git
 
-### 1. Clone and Setup
+### Setup
 
+1. **Clone and setup**
 ```bash
 git clone <repository-url>
 cd entvas
 ```
 
-### 2. Setup PostgreSQL Database
-
-Set up a PostgreSQL database and update the `DATABASE_URL` in `api/.env`
-
-### 3. Setup API Server
-
+2. **API Server**
 ```bash
 cd api
-
-# Install dependencies
 npm install
-
-# Copy environment file
 cp env.example .env
-
-# Generate Prisma client
+# Update DATABASE_URL in .env
 npm run db:generate
-
-# Push database schema
 npm run db:push
-
-# Seed database with sample data
-npm run db:seed
-
-# Start development server
 npm run dev
 ```
 
-### 4. Setup Client Application
-
+3. **Client App**
 ```bash
 cd client
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-### 5. Run Data Feeder (Optional)
-
+4. **Test Data (Optional)**
 ```bash
-# In a new terminal, from the root directory
 python3 feeder.py
 ```
 
-## 📊 Database Setup
+## API Usage
 
-The application uses PostgreSQL with Prisma ORM. See [DATABASE.md](api/DATABASE.md) for detailed setup instructions.
-
-### Database Access
-
-Update `DATABASE_URL` in `api/.env` to point to your PostgreSQL instance
-
-## 🔧 Available Scripts
-
-### API Server (`api/`)
-
+### Webhook Endpoint
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run test         # Run tests
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema changes
-npm run db:migrate   # Create and apply migrations
-npm run db:seed      # Seed database
-npm run db:studio    # Open Prisma Studio
+curl -X POST http://localhost:3000/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventType": "page_view",
+    "userId": "user123", 
+    "timestamp": "2024-01-01T12:00:00Z",
+    "metadata": {
+      "page": "/home",
+      "browser": "chrome"
+    }
+  }'
 ```
 
-### Client Application (`client/`)
-
+### Get Events
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run test         # Run tests
+# Last hour
+curl "http://localhost:3000/events?timeRange=hour"
+
+# Last day
+curl "http://localhost:3000/events?timeRange=day"
+
+# Get stats
+curl "http://localhost:3000/events/stats?timeRange=hour"
 ```
 
-## 🌐 API Endpoints
+## Scripts
 
-- `POST /webhook` - Receive webhook events
-- `GET /events` - Retrieve events with filtering
-- `GET /events/stats` - Get event statistics
-- `GET /health` - Health check
+### API (`api/`)
+```bash
+npm run dev          # Development server
+npm run build        # Build for production
+npm run start        # Production server
+npm run db:studio    # Database GUI
+```
 
-## 📈 Features
+### Client (`client/`)
+```bash
+npm run dev          # Development server
+npm run build        # Build for production
+```
 
-- **Real-time Analytics Dashboard** with live data visualization
-- **Webhook Integration** for receiving external events
-- **Event Filtering** by time range and type
-- **Statistics and Metrics** with interactive charts
-- **PostgreSQL Database** with optimized indexes
-- **TypeScript** for type safety across the stack
-- **Docker Support** for easy development setup
+## Tech Stack
 
-## 🛠️ Tech Stack
-
-### Backend
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **Database**: PostgreSQL with Prisma ORM
-- **Testing**: Jest with supertest
-- **Validation**: Joi schemas
-
-### Frontend
-- **Framework**: Next.js 15 with App Router
-- **UI Library**: Material-UI (MUI) v7
-- **Styling**: Tailwind CSS v4
-- **Charts**: Chart.js with react-chartjs-2
-- **Testing**: Jest with React Testing Library
-
-### Infrastructure
+- **Backend**: Node.js, Express, TypeScript, Prisma, PostgreSQL
+- **Frontend**: Next.js 15, Material-UI, Chart.js
+- **Real-time**: WebSocket
 - **Database**: PostgreSQL
-- **Data Generation**: Python script
 
-## 📁 Project Structure
+## Deployment
 
-```
-entvas/
-├── api/                    # Express.js API server
-│   ├── src/
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   ├── middleware/    # Express middleware
-│   │   ├── schemas/       # Validation schemas
-│   │   └── types/         # TypeScript types
-│   ├── prisma/            # Database schema and migrations
-│   └── tests/             # API tests
-├── client/                # Next.js frontend
-│   ├── src/
-│   │   ├── app/          # Next.js app router
-│   │   └── components/   # React components
-│   └── public/           # Static assets
-├── feeder.py             # Data generation script
-├── docker-compose.yml    # Database services
-└── README.md            # This file
-```
+- **Dashboard**: [https://entvas-dashboard.vercel.app](https://entvas-dashboard.vercel.app)
+- **API**: [https://entvas-api.onrender.com](https://entvas-api.onrender.com)
+- **Repo**: [https://github.com/yourusername/entvas](https://github.com/yourusername/entvas)
 
-## 🔍 Development
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-### Database Management
+## Why PostgreSQL?
 
-```bash
-# View database in Prisma Studio
-cd api && npm run db:studio
+- ACID compliance for data integrity
+- JSONB for flexible metadata
+- Excellent time-series performance
+- Great Prisma integration
+- Cost-effective cloud options
 
-# Push schema changes
-cd api && npm run db:push
-```
+## License
 
-### Testing
-
-```bash
-# Run API tests
-cd api && npm run test
-
-# Run client tests
-cd client && npm run test
-```
-
-## 🚀 Deployment
-
-### Production Database
-
-1. Set up a PostgreSQL instance (AWS RDS, Google Cloud SQL, etc.)
-2. Update `DATABASE_URL` in environment variables
-3. Run migrations: `npm run db:migrate:deploy`
-
-### API Deployment
-
-1. Build the application: `npm run build`
-2. Set production environment variables
-3. Start the server: `npm start`
-
-### Client Deployment
-
-1. Build the application: `npm run build`
-2. Deploy to Vercel, Netlify, or your preferred platform
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
+MIT License
