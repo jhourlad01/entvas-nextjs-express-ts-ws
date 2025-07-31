@@ -10,7 +10,7 @@ class WebSocketService {
   private wss: WebSocketServer | null = null;
   private clients: ConnectedClient[] = [];
 
-  initialize(server: any) {
+  initialize(server: import('http').Server) {
     this.wss = new WebSocketServer({ server });
 
     this.wss.on('connection', (ws: WebSocket) => {

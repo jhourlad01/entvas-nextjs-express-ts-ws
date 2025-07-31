@@ -1,4 +1,4 @@
-import { Event, EventWithReceivedAt, EventStatistics, ValidationErrorDetail } from '../types';
+import { Event, EventWithReceivedAt, EventStatistics, ValidationErrorDetail, EventType, EventMetadata } from '../types';
 import prisma from './prismaService';
 
 /**
@@ -20,7 +20,7 @@ export class EventService {
           eventType: event.eventType,
           userId: event.userId,
           timestamp: new Date(event.timestamp),
-          metadata: event.metadata as any,
+          ...(event.metadata && { metadata: event.metadata as any })
         }
       });
     } catch (error) {
@@ -41,11 +41,11 @@ export class EventService {
         }
       });
 
-      return events.map(event => ({
-        eventType: event.eventType as any,
+      return events.map((event: any) => ({
+        eventType: event.eventType as EventType,
         userId: event.userId,
         timestamp: event.timestamp.toISOString(),
-        metadata: event.metadata as any,
+        metadata: event.metadata as EventMetadata | undefined || undefined,
         receivedAt: event.createdAt
       }));
     } catch (error) {
@@ -81,7 +81,7 @@ export class EventService {
       });
 
       const statistics: EventStatistics = {};
-      stats.forEach(stat => {
+      stats.forEach((stat: any) => {
         statistics[stat.eventType] = stat._count.eventType;
       });
 

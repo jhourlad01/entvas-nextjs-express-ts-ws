@@ -18,7 +18,11 @@ export interface Event {
 }
 
 // Event with received timestamp
-export interface EventWithReceivedAt extends Event {
+export interface EventWithReceivedAt {
+  eventType: EventType;
+  userId: string;
+  timestamp: string;
+  metadata?: EventMetadata | undefined;
   receivedAt: Date;
 }
 

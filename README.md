@@ -1,88 +1,60 @@
 # Real-Time Analytics Dashboard
 
-A web application that receives data from other apps through webhooks, saves it to a database, and shows live charts and numbers on a web page that updates automatically when new data arrives.
+Web application that receives webhook data and displays live analytics charts.
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 18+ and npm
-- PostgreSQL database
-- Git
-
-### Setup
-
-1. **Clone and setup**
 ```bash
-git clone <repository-url>
-cd entvas
+git clone git@github.com:jhourlad01/entvas-nextjs-express-ts-ws.git
+cd entvas-nextjs-express-ts-ws
+docker-compose up
 ```
 
-2. **API Server**
-```bash
-cd api
-npm install
-cp env.example .env
-# Update DATABASE_URL in .env
-npm run db:generate
-npm run db:push
-npm run dev
-```
+**Access**: Dashboard: http://localhost:3000 | API: http://localhost:8000
 
-3. **Client App**
-```bash
-cd client
-npm install
-npm run dev
-```
+## API Testing
 
-4. **Test Data (Optional)**
+### Manual Testing
 ```bash
-python3 feeder.py
-```
-
-## API Usage
-
-### Webhook Endpoint
-```bash
-curl -X POST http://localhost:3000/webhook \
+# Send webhook
+curl -X POST http://localhost:8000/webhook \
   -H "Content-Type: application/json" \
   -d '{
     "eventType": "page_view",
     "userId": "user123", 
     "timestamp": "2024-01-01T12:00:00Z",
-    "metadata": {
-      "page": "/home",
-      "browser": "chrome"
-    }
+    "metadata": {"page": "/home"}
   }'
+
+# Get events
+curl "http://localhost:8000/events?timeRange=hour"
 ```
 
-### Get Events
+### Automated Testing
 ```bash
-# Last hour
-curl "http://localhost:3000/events?timeRange=hour"
+# Generate test data with feeder.py
+python3 feeder.py
 
-# Last day
-curl "http://localhost:3000/events?timeRange=day"
-
-# Get stats
-curl "http://localhost:3000/events/stats?timeRange=hour"
+# Or with Docker
+docker-compose up feeder
 ```
 
-## Scripts
+## Deployment
 
-### API (`api/`)
-```bash
-npm run dev          # Development server
-npm run build        # Build for production
-npm run start        # Production server
-npm run db:studio    # Database GUI
-```
+**Live URLs**
+- Dashboard: https://entvas-dashboard.vercel.app
+- API: https://entvas-api.onrender.com
+- Repo: https://github.com/jhourlad01/entvas-nextjs-express-ts-ws
 
-### Client (`client/`)
+
+
+**Environment Variables**
 ```bash
-npm run dev          # Development server
-npm run build        # Build for production
+# API
+DATABASE_URL=postgresql://user:pass@host:5432/db
+
+# Client  
+NEXT_PUBLIC_WS_URL=wss://entvas-api.onrender.com
 ```
 
 ## Tech Stack
@@ -90,24 +62,18 @@ npm run build        # Build for production
 - **Backend**: Node.js, Express, TypeScript, Prisma, PostgreSQL
 - **Frontend**: Next.js 15, Material-UI, Chart.js
 - **Real-time**: WebSocket
-- **Database**: PostgreSQL
 
-## Deployment
 
-- **Dashboard**: [https://entvas-dashboard.vercel.app](https://entvas-dashboard.vercel.app)
-- **API**: [https://entvas-api.onrender.com](https://entvas-api.onrender.com)
-- **Repo**: [https://github.com/yourusername/entvas](https://github.com/yourusername/entvas)
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+## Troubleshooting
 
-## Why PostgreSQL?
+```bash
+# Docker
+docker-compose ps
+docker-compose logs api
 
-- ACID compliance for data integrity
-- JSONB for flexible metadata
-- Excellent time-series performance
-- Great Prisma integration
-- Cost-effective cloud options
+# Database
+docker-compose exec api npm run db:studio
+```
 
-## License
 
-MIT License

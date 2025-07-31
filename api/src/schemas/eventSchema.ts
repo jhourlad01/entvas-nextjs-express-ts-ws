@@ -49,7 +49,7 @@ export const eventSchema: Joi.ObjectSchema<Event> = Joi.object({
 });
 
 // Type guard to check if an object is a valid Event
-export function isValidEvent(obj: any): obj is Event {
+export function isValidEvent(obj: unknown): obj is Event {
   const { error } = eventSchema.validate(obj);
   return !error;
 } 
