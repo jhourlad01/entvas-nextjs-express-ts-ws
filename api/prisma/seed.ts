@@ -44,16 +44,16 @@ async function main() {
       data: batch,
       skipDuplicates: true,
     });
-    console.log(`✅ Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(events.length / batchSize)}`);
+    console.log(`✓ Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(events.length / batchSize)}`);
   }
 
-  console.log('🎉 Database seeding completed!');
-  console.log(`📊 Created ${events.length} sample events`);
+  console.log('✓ Database seeding completed!');
+  console.log(`✓ Created ${events.length} sample events`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    console.error('✓ Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -2,14 +2,14 @@
 
 A production-ready web application that receives webhook data and displays live analytics charts with real-time updates.
 
-## 🌐 Live Application
+## Live Application
 
 **Production URLs:**
 - **Dashboard**: https://entvas-dashboard.vercel.app
 - **API**: https://entvas-api.onrender.com
 - **GitHub Repository**: https://github.com/jhourlad01/entvas-nextjs-express-ts-ws
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -29,7 +29,7 @@ docker-compose up -d
 # API: http://localhost/health
 ```
 
-## 📡 API Usage
+##  API Usage
 
 ### Endpoints
 
@@ -118,7 +118,7 @@ Import this collection to test all endpoints:
 }
 ```
 
-## 🏗️ Architecture & Design Patterns
+## Architecture & Design Patterns
 
 ### Backend Architecture
 
@@ -168,25 +168,7 @@ const { events, loading, error } = useEvents();
 - WebSocket service
 - Data transformation services
 
-### Why These Patterns?
-
-1. **MVC**: Separates concerns, makes code testable and maintainable
-2. **Repository**: Abstracts data access, enables easy testing and switching databases
-3. **Middleware**: Modular request processing, reusable across endpoints
-4. **Observer**: Enables real-time updates without polling
-5. **Component**: Reusable UI elements, consistent design
-6. **Custom Hooks**: Logic reuse, clean component code
-
-## 🗄️ Database Choice: PostgreSQL
-
-### Why PostgreSQL?
-
-1. **ACID Compliance**: Ensures data integrity for critical analytics
-2. **JSONB Support**: Flexible metadata storage for webhook events
-3. **Time-Series Performance**: Excellent for event analytics and filtering
-4. **Prisma Integration**: Type-safe database queries with excellent TypeScript support
-5. **Scalability**: Supports read replicas, partitioning, and sharding
-6. **Free Tier**: Available on Supabase, Neon, and other platforms
+## Database Choice: PostgreSQL
 
 ### Database Schema
 ```sql
@@ -206,7 +188,7 @@ CREATE INDEX idx_events_type ON events(event_type);
 CREATE INDEX idx_events_user ON events(user_id);
 ```
 
-## 📈 Scaling Strategy
+##  Scaling Strategy
 
 ### Current Architecture Supports:
 
@@ -245,7 +227,7 @@ docker-compose up --scale client=3
 5. **CDN**: Global static asset delivery
 6. **Monitoring**: Prometheus + Grafana for metrics
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Runtime**: Node.js 18 with TypeScript
@@ -267,7 +249,7 @@ docker-compose up --scale client=3
 - **Reverse Proxy**: Nginx with rate limiting
 - **Database**: PostgreSQL with persistence
 
-## 🔧 Development
+## Development
 
 ### Local Development
 ```bash
@@ -304,7 +286,7 @@ cd api && npx prisma migrate dev
 cd api && npx prisma studio
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -338,21 +320,3 @@ curl http://localhost/health
 # Check API logs
 docker-compose logs api --tail=50
 ```
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
----
-
-**Built with ❤️ for Senior Full Stack Developer Assessment**
-
-

@@ -4,6 +4,7 @@ import { validate } from '../middleware/validation';
 import { EventService } from '../services/eventService';
 import { webSocketService } from '../services/websocketService';
 import { Event, ApiResponse } from '../types';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
  * POST /webhook - Receive and process webhook events
  * Validates incoming event data and stores it if valid
  */
-router.post('/', validate(eventSchema), async (req: Request, res: Response) => {
+router.post('/', authenticateToken, validate(eventSchema), async (req: Request, res: Response) => {
   try {
     const event: Event = req.body;
     const receivedAt = new Date();

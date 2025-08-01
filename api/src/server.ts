@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import webhookRoutes from './routes/webhook';
 import eventsRoutes from './routes/events';
+import exportRoutes from './routes/export';
 import indexRoutes from './routes/index';
 import { errorHandler, notFoundHandler } from './middleware/errorHandling';
 import { requestLogger } from './middleware/logging';
@@ -28,6 +29,7 @@ app.use(requestLogger);
 // Mount routes
 app.use('/webhook', webhookRoutes);
 app.use('/events', eventsRoutes);
+app.use('/export', exportRoutes);
 app.use('/', indexRoutes);
 
 // Error handling middleware

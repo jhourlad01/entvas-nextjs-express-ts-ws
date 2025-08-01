@@ -6,6 +6,19 @@ import webhookRoutes from '../src/routes/webhook';
 import indexRoutes from '../src/routes/index';
 import eventsRoutes from '../src/routes/events';
 
+// Mock the authenticateToken middleware
+jest.mock('../src/middleware/auth', () => ({
+  authenticateToken: (req: any, _res: any, next: any) => {
+    req.user = {
+      sub: 'test-user-id',
+      email: 'test@example.com',
+      name: 'Test User',
+      role: 'admin'
+    };
+    next();
+  }
+}));
+
 // Create a test app without starting the server
 const app = express();
 

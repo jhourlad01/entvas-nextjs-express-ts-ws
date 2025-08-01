@@ -1,5 +1,6 @@
 import { Event, EventWithReceivedAt, EventStatistics, ValidationErrorDetail, EventType, EventMetadata } from '../types';
 import prisma from './prismaService';
+import { StatsService } from './statsService';
 
 /**
  * Service class for handling event operations
@@ -23,6 +24,9 @@ export class EventService {
           ...(event.metadata && { metadata: event.metadata as any })
         }
       });
+
+      // Update pre-calculated statistics
+      await StatsService.updatePreCalculatedStats(event.eventType);
     } catch (error) {
       console.error('Error saving event to database:', error);
       throw error;
@@ -41,7 +45,7 @@ export class EventService {
         }
       });
 
-      return events.map((event: any) => ({
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
         eventType: event.eventType as EventType,
         userId: event.userId,
         timestamp: event.timestamp.toISOString(),
@@ -81,7 +85,7 @@ export class EventService {
       });
 
       const statistics: EventStatistics = {};
-      stats.forEach((stat: any) => {
+      stats.forEach((stat: { eventType: string; _count: { eventType: number } }) => {
         statistics[stat.eventType] = stat._count.eventType;
       });
 

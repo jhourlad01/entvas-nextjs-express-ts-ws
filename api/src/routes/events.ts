@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { EventService } from '../services/eventService';
 import { ApiResponse, EventStatistics } from '../types';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
  * - filter: 'hour' | 'day' | 'week' - Filter events from past hour, day, or week (defaults to 'hour')
  * Returns filtered events that have been successfully processed
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { filter } = req.query;
     let events = await EventService.getAllEvents();
@@ -68,7 +69,7 @@ router.get('/', async (req: Request, res: Response) => {
  * - filter: 'hour' | 'day' | 'week' - Filter events from past hour, day, or week (defaults to 'hour')
  * Returns event counts and statistics for filtered events
  */
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { filter } = req.query;
     let events = await EventService.getAllEvents();

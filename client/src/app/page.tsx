@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Container, Typography, Box, Chip } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Container, Typography, Box, Chip, Stack } from '@mui/material';
 import { Analytics, Timeline } from '@mui/icons-material';
 import StatsCard from '@/components/dashboard/StatsCard';
 import EventsPerMinuteChart from '@/components/dashboard/EventsPerMinuteChart';
 import TopEventTypes from '@/components/dashboard/TopEventTypes';
 import TimeFilter, { TimeRange } from '@/components/dashboard/TimeFilter';
+import { ExportButton } from '@/components/ExportButton';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { apiService } from '@/services/api';
+import { useApi } from '@/services/api';
 
 // Generate live data for demonstration
 const generateLiveData = (timeRange: TimeRange) => {
@@ -87,16 +88,19 @@ export default function Home() {
   
   // Use WebSocket for real-time stats
   const { stats, connected } = useWebSocket();
+  
+  // Use authenticated API service
+  const api = useApi();
 
   // Load data from API based on time range
-  const loadData = async (timeRange: TimeRange) => {
+  const loadData = useCallback(async (timeRange: TimeRange) => {
     try {
       setLoading(true);
       console.log('Loading data for time range:', timeRange);
       
       const [eventsResponse, statsResponse] = await Promise.all([
-        apiService.getEvents(timeRange),
-        apiService.getEventStats(timeRange)
+        api.getEvents(timeRange),
+        api.getStats(timeRange)
       ]);
 
       console.log('API Response - Events:', eventsResponse.events.length, 'Stats:', statsResponse);
@@ -104,7 +108,7 @@ export default function Home() {
       // Convert events to chart data format based on time range
       const eventsByTime = new Map<string, number>();
       
-      eventsResponse.events.forEach(event => {
+      eventsResponse.events.forEach((event: { receivedAt: string }) => {
         const date = new Date(event.receivedAt);
         let timeKey: string;
         
@@ -158,8 +162,8 @@ export default function Home() {
       const topEventTypesArray = Object.entries(statsResponse.statistics)
         .map(([type, count]) => ({
           type,
-          count,
-          percentage: totalEvents > 0 ? (count / totalEvents) * 100 : 0
+          count: count as number,
+          percentage: totalEvents > 0 ? ((count as number) / totalEvents) * 100 : 0
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
@@ -175,20 +179,20 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api]);
 
   // Initialize data on client side to prevent hydration errors
   useEffect(() => {
     setIsClient(true);
     loadData('hour');
-  }, []);
+  }, [loadData]);
 
   // Load data when time range changes
   useEffect(() => {
     if (isClient) {
       loadData(selectedTimeRange);
     }
-  }, [selectedTimeRange, isClient]);
+  }, [selectedTimeRange, isClient, loadData]);
 
   // Handle time range changes
   const handleTimeRangeChange = (newRange: TimeRange) => {
@@ -198,21 +202,43 @@ export default function Home() {
   return (
     <Container maxWidth="xl">
       {/* Header with Connection Status */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+      <Box sx={{ 
+        mb: 4, 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: 2
+      }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          sx={{ 
+            fontWeight: 'bold',
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+          }}
+        >
           Events Analytics Dashboard
         </Typography>
-        <Chip 
-          label={connected ? 'Connected' : 'Disconnected'} 
-          color={connected ? 'success' : 'error'}
-          size="small"
-        />
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Chip 
+            label={connected ? 'Connected' : 'Disconnected'} 
+            color={connected ? 'success' : 'error'}
+            size="small"
+          />
+          <ExportButton filter={selectedTimeRange} />
+        </Stack>
       </Box>
 
 
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(2, 1fr)' }, gap: 3, mb: 4 }}>
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(2, 1fr)' }, 
+        gap: { xs: 2, sm: 3 }, 
+        mb: 4 
+      }}>
         <StatsCard
           title="Total Events"
           value={stats.totalEvents}

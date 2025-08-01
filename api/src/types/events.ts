@@ -3,6 +3,9 @@ import { ValidationErrorDetail } from './validation';
 // Event types
 export type EventType = 'page_view' | 'user_joined' | 'user_disconnect' | 'log' | 'user_message';
 
+// Time filter types
+export type TimeFilter = 'hour' | 'day' | 'week';
+
 // Metadata interface
 export interface EventMetadata {
   page?: 'home' | 'profile' | 'settings' | 'dashboard';

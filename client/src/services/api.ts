@@ -1,57 +1,36 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { useAuth0 } from '@auth0/auth0-react';
 
-export interface EventStats {
-  totalEvents: number;
-  invalidEvents: number;
-  statistics: Record<string, number>;
-  filter: string;
-}
+export const useApi = () => {
+  const { getAccessTokenSilently } = useAuth0();
 
-export interface Event {
-  eventType: string;
-  userId: string;
-  timestamp: string;
-  metadata?: Record<string, unknown>;
-  receivedAt: string;
-}
+  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    try {
+      const token = await getAccessTokenSilently();
+      
+      const response = await fetch(`/api${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          ...options.headers,
+        },
+      });
 
-export interface EventsResponse {
-  events: Event[];
-  count: number;
-  filter: string;
-}
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
 
-class ApiService {
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error('API call error:', error);
+      throw error;
     }
+  };
 
-    return response.json();
-  }
-
-  async getEventStats(filter: 'hour' | 'day' | 'week' = 'hour'): Promise<EventStats> {
-    const response = await this.request<{ success: boolean; data: EventStats }>(`/events/stats?filter=${filter}`);
-    return response.data;
-  }
-
-  async getEvents(filter: 'hour' | 'day' | 'week' = 'hour'): Promise<EventsResponse> {
-    const response = await this.request<{ success: boolean; data: EventsResponse }>(`/events?filter=${filter}`);
-    return response.data;
-  }
-
-  async getHealth(): Promise<{ status: string; timestamp: string; uptime: number }> {
-    const response = await this.request<{ success: boolean; data: { status: string; timestamp: string; uptime: number } }>('/health');
-    return response.data;
-  }
-}
-
-export const apiService = new ApiService(); 
+  return {
+    getEvents: (filter?: string) => apiCall(`/events${filter ? `?filter=${filter}` : ''}`),
+    getStats: (filter?: string) => apiCall(`/events/stats${filter ? `?filter=${filter}` : ''}`),
+    exportCsv: (filter?: string) => apiCall(`/export/csv${filter ? `?filter=${filter}` : ''}`),
+    exportJson: (filter?: string) => apiCall(`/export/json${filter ? `?filter=${filter}` : ''}`),
+  };
+}; 
