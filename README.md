@@ -1,322 +1,506 @@
-# Real-Time Analytics Dashboard
+# Entvas - Real-time Analytics Dashboard
 
-A production-ready web application that receives webhook data and displays live analytics charts with real-time updates.
+A full-stack real-time analytics dashboard built with microservices architecture, featuring WebSocket-powered live data updates, authentication, and comprehensive event tracking.
 
-## Live Application
+## Architecture
 
-**Production URLs:**
-- **Dashboard**: https://entvas-dashboard.vercel.app
-- **API**: https://entvas-api.onrender.com
-- **GitHub Repository**: https://github.com/jhourlad01/entvas-nextjs-express-ts-ws
+This project follows a **microservices architecture** with each service in its own dedicated folder:
+
+```
+entvas/
+├── services/
+│   ├── api/           # Node.js/Express API service
+│   ├── client/        # Next.js/React client service  
+│   ├── database/      # PostgreSQL database service
+│   └── nginx/         # Nginx reverse proxy service
+├── docker-compose.yml # Multi-service orchestration
+├── feeder.py         # Event simulation script
+└── README.md         # This file
+```
+
+## Services Overview
+
+### **API Service** (`services/api/`)
+- **Technology**: Node.js, Express, TypeScript
+- **Port**: 8000
+- **Features**:
+  - RESTful API endpoints
+  - WebSocket server for real-time updates
+  - JWT authentication with Auth0
+  - Event processing and storage
+  - Database operations with Prisma ORM
+  - Pre-segmented data for instant filtering
+
+### **Client Service** (`services/client/`)
+- **Technology**: Next.js, React, TypeScript
+- **Port**: 3000
+- **Features**:
+  - Real-time dashboard with live charts
+  - WebSocket client for instant updates
+  - Auth0 authentication integration
+  - Responsive Material-UI components
+  - Chart.js visualizations
+  - Instant filter switching (no API calls)
+
+### **Database Service** (`services/database/`)
+- **Technology**: PostgreSQL 15
+- **Port**: 5432
+- **Features**:
+  - Event data persistence
+  - Optimized schema for analytics
+  - Initialization scripts
+
+### **Nginx Service** (`services/nginx/`)
+- **Technology**: Nginx Alpine
+- **Ports**: 80 (HTTP), 443 (HTTPS)
+- **Features**:
+  - Reverse proxy for all services
+  - SSL/TLS termination
+  - Load balancing
+  - Static file serving
 
 ## Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
+- Python 3.8+ (for event simulation)
 
-### Running the Application
+### 1. Clone and Setup
 ```bash
-# Clone the repository
-git clone https://github.com/jhourlad01/entvas-nextjs-express-ts-ws.git
-cd entvas-nextjs-express-ts-ws
+git clone <repository-url>
+cd entvas
+```
 
-# Start all services
+### 2. Environment Configuration
+
+#### Production (Docker)
+The project uses production environment files for Docker deployment:
+
+```bash
+# Production environment files are already configured:
+# - services/api/.env.production
+# - services/client/.env.production
+```
+
+#### Development (npm)
+For local development, create environment files from examples:
+
+```bash
+# Copy environment examples
+cp services/api/env.example services/api/.env
+cp services/client/env.example services/client/.env.local
+
+# Edit environment variables as needed
+nano services/api/.env
+nano services/client/.env.local
+```
+
+### 3. Start All Services
+```bash
+# Start the entire microservices stack
 docker-compose up -d
 
-# Access the application
-# Dashboard: http://localhost
-# API: http://localhost/health
+# View logs
+docker-compose logs -f
 ```
 
-##  API Usage
-
-### Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check |
-| `POST` | `/webhook` | Receive webhook events |
-| `GET` | `/events` | Get filtered events |
-| `GET` | `/events/stats` | Get event statistics |
-
-### API Testing Examples
-
-#### 1. Health Check
+### 4. Generate Test Data
 ```bash
-curl http://localhost/health
+# Run the event feeder script
+python3 feeder.py
 ```
 
-#### 2. Send Webhook Event
+## Testing with Event Feeder
+
+The `feeder.py` script simulates real-time webhook events to test the analytics dashboard.
+
+### Basic Usage
 ```bash
-curl -X POST http://localhost/webhook \
-  -H "Content-Type: application/json" \
-  -d '{
-    "eventType": "page_view",
-    "userId": "123",
-    "timestamp": "2024-01-01T12:00:00Z",
-    "metadata": {"page": "home"}
-  }'
+# Start generating random events
+python3 feeder.py
 ```
 
-#### 3. Get Events (Last Hour)
+### Configuration Options
+You can customize the feeder behavior using environment variables:
+
 ```bash
-curl "http://localhost/events?filter=hour"
+# Custom webhook URL (default: http://localhost:8000/webhook)
+WEBHOOK_URL=http://localhost:8000/webhook python3 feeder.py
+
+# Custom API key (default: entvas_webhook_secret_key_8797f88b5f2e10fbf09d7ef162ffc75b)
+WEBHOOK_API_KEY=entvas_custom_webhook_key python3 feeder.py
+
+# Both custom settings
+WEBHOOK_URL=http://localhost:8000/webhook WEBHOOK_API_KEY=entvas_custom_webhook_key python3 feeder.py
 ```
 
-#### 4. Get Event Statistics
-```bash
-curl "http://localhost/events/stats?filter=day"
+### What It Does
+- **Generates random events** every 5-10 seconds
+- **Event types**: page_view, user_joined, user_disconnect, log, user_message
+- **Metadata**: Includes page, browser, and user information
+- **Invalid data**: Occasionally sends invalid events to test error handling
+- **Real-time**: Sends events directly to the API webhook endpoint
+
+### Expected Output
 ```
-
-#### 5. Get Events with Different Filters
-```bash
-# Last hour
-curl "http://localhost/events?filter=hour"
-
-# Last day
-curl "http://localhost/events?filter=day"
-
-# Last week
-curl "http://localhost/events?filter=week"
-```
-
-### Postman Collection
-Import this collection to test all endpoints:
-```json
+Starting data generation... Press Ctrl+C to stop
+Using API Key: entvas_webhook_secret...
 {
-  "info": {
-    "name": "Entvas API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "url": "http://localhost/health"
-      }
-    },
-    {
-      "name": "Send Webhook",
-      "request": {
-        "method": "POST",
-        "url": "http://localhost/webhook",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"eventType\": \"page_view\",\n  \"userId\": \"123\",\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"metadata\": {\"page\": \"home\"}\n}"
-        }
-      }
-    }
-  ]
+  "eventType": "page_view",
+  "userId": "123",
+  "timestamp": "2025-01-01T12:00:00Z",
+  "metadata": {
+    "page": "home",
+    "browser": "chrome"
+  }
 }
+Webhook response: 200
 ```
 
-## Architecture & Design Patterns
+### Stopping the Feeder
+Press `Ctrl+C` to stop the event generation.
 
-### Backend Architecture
-
-#### 1. **MVC Pattern**
-- **Models**: Prisma ORM with PostgreSQL
-- **Views**: JSON API responses
-- **Controllers**: Express route handlers
-
-#### 2. **Repository Pattern**
-```typescript
-// EventService abstracts data access
-export class EventService {
-  static async addEvent(event: Event): Promise<void>
-  static async getEvents(filter: TimeFilter): Promise<Event[]>
-  static async getStatistics(filter: TimeFilter): Promise<Statistics>
-}
-```
-
-#### 3. **Middleware Pattern**
-- Authentication middleware
-- Validation middleware (Joi)
-- Logging middleware
-- CORS middleware
-
-#### 4. **Observer Pattern**
-- WebSocket event broadcasting
-- Real-time updates to connected clients
-
-### Frontend Architecture
-
-#### 1. **Component Pattern**
-- Reusable UI components
-- Material-UI component library
-- Custom chart components
-
-#### 2. **Custom Hooks Pattern**
-```typescript
-// useWebSocket hook for real-time data
-const { events, isConnected } = useWebSocket();
-
-// useEvents hook for data fetching
-const { events, loading, error } = useEvents();
-```
-
-#### 3. **Service Layer Pattern**
-- API client services
-- WebSocket service
-- Data transformation services
-
-## Database Choice: PostgreSQL
-
-### Database Schema
-```sql
--- Events table with JSONB for flexible metadata
-CREATE TABLE events (
-  id SERIAL PRIMARY KEY,
-  event_type VARCHAR(50) NOT NULL,
-  user_id VARCHAR(100) NOT NULL,
-  timestamp TIMESTAMP NOT NULL,
-  metadata JSONB,
-  received_at TIMESTAMP DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX idx_events_timestamp ON events(timestamp);
-CREATE INDEX idx_events_type ON events(event_type);
-CREATE INDEX idx_events_user ON events(user_id);
-```
-
-##  Scaling Strategy
-
-### Current Architecture Supports:
-
-#### 1. **Horizontal Scaling**
-```yaml
-# Scale API instances
-docker-compose up --scale api=3
-
-# Scale client instances  
-docker-compose up --scale client=3
-```
-
-#### 2. **Database Scaling**
-- **Read Replicas**: Distribute read load
-- **Connection Pooling**: Efficient connection management
-- **Partitioning**: Split data by time ranges
-- **Sharding**: Distribute data across multiple databases
-
-#### 3. **WebSocket Scaling**
-- **Redis Pub/Sub**: Share WebSocket connections across instances
-- **Load Balancer**: Distribute WebSocket connections
-- **Sticky Sessions**: Maintain connection consistency
-
-#### 4. **Performance Optimizations**
-- **Nginx Caching**: Static file caching
-- **CDN**: Global content delivery
-- **Database Indexing**: Optimized queries
-- **Rate Limiting**: Prevent abuse
-
-### Scaling for 100K+ Users
-
-1. **Load Balancer**: Nginx/HAProxy for traffic distribution
-2. **Multiple API Instances**: Auto-scaling based on load
-3. **Database Clustering**: Primary + read replicas
-4. **Redis Cluster**: Session and cache management
-5. **CDN**: Global static asset delivery
-6. **Monitoring**: Prometheus + Grafana for metrics
-
-## Tech Stack
-
-### Backend
-- **Runtime**: Node.js 18 with TypeScript
-- **Framework**: Express.js with middleware architecture
-- **Database**: PostgreSQL with Prisma ORM
-- **Validation**: Joi schema validation
-- **Real-time**: WebSocket with ws library
-
-### Frontend
-- **Framework**: Next.js 15 with App Router
-- **UI Library**: Material-UI (MUI) v7
-- **Charts**: Chart.js with react-chartjs-2
-- **Styling**: Emotion CSS-in-JS
-- **Real-time**: WebSocket client
-
-### DevOps
-- **Containerization**: Docker with multi-stage builds
-- **Orchestration**: Docker Compose for production
-- **Reverse Proxy**: Nginx with rate limiting
-- **Database**: PostgreSQL with persistence
+### 5. Access the Application
+- **Dashboard**: http://localhost
+- **API**: http://localhost:8000
+- **Database**: localhost:5432
 
 ## Development
 
-### Local Development
-```bash
-# Install dependencies
-cd api && npm install
-cd ../client && npm install
+### Environment Management
 
-# Run development servers
-cd api && npm run dev
-cd ../client && npm run dev
+The project uses separate environment files for different deployment scenarios:
+
+#### Production Environment Files
+- **`services/api/.env.production`**: API service production settings
+- **`services/client/.env.production`**: Client service production settings
+
+#### Development Environment Files
+- **`services/api/.env`**: API service development settings (create from `env.example`)
+- **`services/client/.env.local`**: Client service development settings (create from `env.example`)
+
+#### Key Environment Variables
+
+| Service | Variable | Production | Development |
+|---------|----------|------------|-------------|
+| API | `DATABASE_URL` | `postgresql://user:pass@database:5432/db` | `postgresql://user:pass@localhost:5432/db` |
+| Client | `NEXT_PUBLIC_WS_URL` | `ws://localhost/ws` | `ws://localhost:8000` |
+| Client | `NEXT_PUBLIC_AUTH0_REDIRECT_URI` | `http://localhost` | `http://localhost:3000` |
+| Client | `NEXT_PUBLIC_API_URL` | `http://localhost` | `http://localhost:8000` |
+
+### Running Individual Services
+
+#### API Service
+```bash
+cd services/api
+npm install
+npm run dev
 ```
 
-### Testing
+#### Client Service
 ```bash
-# API tests
-cd api && npm run test
-
-# Client tests  
-cd client && npm run test
-
-# All tests
-npm run test:all
+cd services/client
+npm install
+npm run dev
 ```
 
 ### Database Management
 ```bash
-# Generate Prisma client
-cd api && npx prisma generate
+# Access database
+docker-compose exec database psql -U entvas_user -d entvas_db
 
 # Run migrations
-cd api && npx prisma migrate dev
-
-# Open database studio
-cd api && npx prisma studio
+cd services/api
+npx prisma migrate dev
 ```
 
-## Troubleshooting
+## Database Setup and Management
 
-### Common Issues
+### Quick Start with Docker
 
-#### Docker Issues
+The database is automatically started with Docker Compose:
+
 ```bash
-# Check container status
-docker-compose ps
+# Start PostgreSQL
+docker-compose up -d database
 
-# View logs
-docker-compose logs api
-docker-compose logs client
-
-# Rebuild containers
-docker-compose build --no-cache
+# Check if service is running
+docker-compose ps database
 ```
 
-#### Database Issues
+### Database Connection Details
+
+- **Host**: `localhost` (or `database` from within containers)
+- **Port**: `5432`
+- **Database**: `entvas_db`
+- **Username**: `entvas_user`
+- **Password**: `entvas_password`
+- **Connection String**: `postgresql://entvas_user:entvas_password@database:5432/entvas_db`
+
+### Database Schema
+
+#### Event Model
+
+```prisma
+model Event {
+  id         String   @id @default(uuid())
+  eventType  String
+  userId     String
+  timestamp  DateTime
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([timestamp, eventType])
+  @@index([userId, timestamp])
+  @@index([eventType, timestamp])
+  @@map("events")
+}
+```
+
+#### Indexes
+
+The database includes several indexes for optimal query performance:
+
+- `(timestamp, eventType)` - For time-based filtering with event type
+- `(userId, timestamp)` - For user-specific time-based queries
+- `(eventType, timestamp)` - For event type analysis over time
+
+### Prisma Commands
+
 ```bash
-# Reset database
-docker-compose exec api npx prisma migrate reset
+cd services/api
 
-# Check database connection
-docker-compose exec api npx prisma db push
+# Generate Prisma Client
+npm run db:generate
+
+# Push Schema Changes
+npm run db:push
+
+# Create and Apply Migrations
+npm run db:migrate
+
+# Deploy Migrations (Production)
+npm run db:migrate:deploy
+
+# Reset Database
+npm run db:reset
+
+# Seed Database with Sample Data
+npm run db:seed
+
+# Open Prisma Studio
+npm run db:studio
 ```
 
-#### API Issues
+### Database Operations
+
 ```bash
-# Test API health
-curl http://localhost/health
+# Backup database
+docker-compose exec database pg_dump -U entvas_user entvas_db > backup.sql
 
-# Check API logs
-docker-compose logs api --tail=50
+# Restore database
+docker-compose exec -T database psql -U entvas_user entvas_db < backup.sql
+
+# View database size
+docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT pg_size_pretty(pg_database_size('entvas_db'));"
+
+# Check table sizes
+docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) FROM pg_tables WHERE schemaname = 'public';"
 ```
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Connection Refused**
+   - Ensure Docker containers are running: `docker-compose ps`
+   - Check if port 5432 is available: `netstat -an | grep 5432`
+
+2. **Authentication Failed**
+   - Verify credentials in environment variables
+   - Check if database exists: `docker-compose exec database psql -U entvas_user -d entvas_db`
+
+3. **Migration Errors**
+   - Reset database: `npm run db:reset`
+   - Check migration history: `npx prisma migrate status`
+
+#### Useful Commands
+
+```bash
+# View database logs
+docker-compose logs database
+
+# Check database health
+docker-compose exec database pg_isready -U entvas_user -d entvas_db
+
+# Monitor active connections
+docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';"
+
+# Check max connections
+docker-compose exec database psql -U entvas_user -d entvas_db -c "SHOW max_connections;"
+```
+
+### Performance Optimization
+
+#### Connection Pooling
+
+For high-traffic applications, configure connection pooling:
+
+```typescript
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  // Connection pooling configuration
+  log: ['query', 'info', 'warn', 'error'],
+})
+```
+
+#### Query Optimization
+
+- Use the provided indexes for filtering
+- Implement pagination for large result sets
+- Use `select` to limit returned fields
+- Consider caching frequently accessed data
+
+#### Monitoring
+
+Monitor database performance using:
+
+- PostgreSQL logs: `docker-compose logs database`
+- Application logs for slow queries
+- Database statistics: `docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes;"`
+
+### Testing
+```bash
+# API tests
+cd services/api
+npm test
+
+# Client tests
+cd services/client
+npm test
+```
+
+## Features
+
+### Real-time Analytics
+- **Live Data Updates**: WebSocket-powered real-time dashboard
+- **Instant Filtering**: Pre-segmented data for instant time range switching
+- **No API Calls**: Pure client-side filtering with WebSocket data
+- **Performance Optimized**: Memoized components and debounced updates
+
+### Event Processing
+- **Webhook Integration**: External event ingestion via POST endpoint
+- **Event Validation**: Comprehensive input validation and sanitization
+- **Real-time Broadcasting**: Instant event distribution to all connected clients
+- **Data Segmentation**: Server-side pre-computation for all time ranges
+
+### Authentication & Security
+- **Auth0 Integration**: JWT-based authentication
+- **API Key Protection**: Secure webhook endpoints
+- **CORS Configuration**: Proper cross-origin resource sharing
+- **Environment Variables**: Secure configuration management
+
+### Monitoring & Observability
+- **Structured Logging**: Comprehensive request/response logging
+- **Error Handling**: Graceful error management and reporting
+- **Health Checks**: Service health monitoring
+- **Performance Metrics**: Real-time performance tracking
+
+## Docker Deployment
+
+### Production Build
+```bash
+# Build all services
+docker-compose build
+
+# Start production stack
+docker-compose -f docker-compose.yml up -d
+```
+
+### Service Scaling
+```bash
+# Scale API service
+docker-compose up -d --scale api=3
+
+# Scale client service
+docker-compose up -d --scale client=2
+```
+
+## Project Structure
+
+```
+services/
+├── api/
+│   ├── src/
+│   │   ├── routes/          # API endpoints
+│   │   ├── services/        # Business logic
+│   │   ├── middleware/      # Express middleware
+│   │   └── server.ts        # Main server file
+│   ├── tests/               # Test suites
+│   ├── prisma/              # Database schema
+│   └── Dockerfile           # API container
+├── client/
+│   ├── src/
+│   │   ├── app/             # Next.js app router
+│   │   ├── components/      # React components
+│   │   └── hooks/           # Custom hooks
+│   ├── public/              # Static assets
+│   └── Dockerfile           # Client container
+├── database/
+│   └── init-db.sql          # Database initialization
+└── nginx/
+    └── nginx.conf           # Nginx configuration
+```
+
+## 🔄 Data Flow
+
+1. **Event Ingestion**: External systems send events via webhook
+2. **Event Processing**: API validates and stores events in database
+3. **Real-time Broadcasting**: WebSocket broadcasts to all connected clients
+4. **Client Updates**: Dashboard components update instantly
+5. **Filter Switching**: Pre-segmented data enables instant filtering
+
+## Performance Optimizations
+
+- **WebSocket Single Source**: All data comes from WebSocket, no API calls for filtering
+- **Pre-segmented Data**: Server-side computation for hour/day/week views
+- **Memoized Components**: React.memo for chart components
+- **Debounced Updates**: 300ms debounce for WebSocket updates
+- **Animation Disabled**: Chart animations disabled for performance
+- **Containerized**: Docker optimization for production deployment
+
+## Monitoring
+
+### Health Checks
+- API: `GET /health`
+- Client: Built-in Next.js health monitoring
+- Database: PostgreSQL connection monitoring
+
+### Logs
+```bash
+# View all service logs
+docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f api
+docker-compose logs -f client
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
