@@ -6,7 +6,7 @@ import webhookRoutes from '../src/routes/webhook';
 import indexRoutes from '../src/routes/index';
 import eventsRoutes from '../src/routes/events';
 
-// Mock the authenticateToken middleware
+// Mock the auth middleware
 jest.mock('../src/middleware/auth', () => ({
   authenticateToken: (req: any, _res: any, next: any) => {
     req.user = {
@@ -16,6 +16,38 @@ jest.mock('../src/middleware/auth', () => ({
       role: 'admin'
     };
     next();
+  },
+  authenticateApiKey: (_req: any, _res: any, next: any) => {
+    next();
+  }
+}));
+
+// Mock the validation middleware
+jest.mock('../src/middleware/validation', () => ({
+  validate: () => (_req: any, _res: any, next: any) => {
+    next();
+  }
+}));
+
+// Mock the EventService
+jest.mock('../src/services/eventService', () => ({
+  EventService: {
+    addEvent: jest.fn().mockResolvedValue(undefined),
+    getAllEvents: jest.fn().mockResolvedValue([]),
+    getEventCount: jest.fn().mockResolvedValue(0),
+    getEventStatistics: jest.fn().mockResolvedValue({}),
+    logEventDetails: jest.fn().mockResolvedValue(undefined),
+    logValidationFailure: jest.fn(),
+    getInvalidEventsCount: jest.fn().mockReturnValue(0)
+  }
+}));
+
+// Mock the WebSocket service
+jest.mock('../src/services/websocketService', () => ({
+  webSocketService: {
+    initialize: jest.fn(),
+    broadcastStats: jest.fn().mockResolvedValue(undefined),
+    getConnectedClientsCount: jest.fn().mockReturnValue(0)
   }
 }));
 
