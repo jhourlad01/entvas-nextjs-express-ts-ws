@@ -41,6 +41,11 @@ export default function EventsPerMinuteChart({
   data, 
   title = "Events per Minute" 
 }: EventsPerMinuteChartProps) {
+  // Debug logging
+  console.log('EventsPerMinuteChart received data:', data);
+  console.log('Data length:', data.length);
+  console.log('Data has values:', data.some(item => item.count > 0));
+  
   // Transform data for Chart.js
   const chartData = {
     labels: data.map(item => {
@@ -78,6 +83,7 @@ export default function EventsPerMinuteChart({
   const options: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
       legend: {
         display: false,
@@ -118,6 +124,9 @@ export default function EventsPerMinuteChart({
     },
   };
 
+  // Check if we have meaningful data
+  const hasData = data.length > 0 && data.some(item => item.count > 0);
+
   return (
     <Card sx={{ height: 400 }}>
       <CardContent>
@@ -125,7 +134,21 @@ export default function EventsPerMinuteChart({
           {title}
         </Typography>
         <Box sx={{ height: 320, position: 'relative' }}>
-          <Line data={chartData} options={options} />
+          {hasData ? (
+            <Line data={chartData} options={options} />
+          ) : (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100%',
+              color: 'text.secondary'
+            }}>
+              <Typography variant="body2">
+                {data.length === 0 ? 'No data available' : 'No events in this time range'}
+              </Typography>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>

@@ -95,6 +95,7 @@ export default function TopEventTypes({
   const options: ChartOptions<'pie'> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
       legend: {
         display: false, // We'll show our custom legend

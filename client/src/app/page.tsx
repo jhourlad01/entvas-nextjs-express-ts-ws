@@ -127,6 +127,8 @@ export default function Home() {
       });
 
       console.log('Chart data array:', chartDataArray);
+      console.log('Chart data length:', chartDataArray.length);
+      console.log('Chart data has values:', chartDataArray.some(item => item.count > 0));
 
       // Convert stats to top event types format
       const totalEvents = statsResponse.data.totalEvents || 0;
@@ -170,14 +172,31 @@ export default function Home() {
   // Load data when time range changes (only if already authenticated and initialized)
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && dataInitialized) {
+      console.log('Time range changed to:', selectedTimeRange, 'Loading new data...');
       loadData(selectedTimeRange);
     }
   }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, loadData]);
 
-  // Refresh data when WebSocket stats update (indicating new events)
+  // Use WebSocket eventsPerMinute data for real-time chart updates
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && stats.eventsPerMinute.length > 0) {
+      // Check if WebSocket data has meaningful values (not all zeros)
+      const hasData = stats.eventsPerMinute.some(item => item.count > 0);
+      console.log('WebSocket eventsPerMinute data:', stats.eventsPerMinute, 'Has data:', hasData);
+      
+      if (hasData) {
+        // Use WebSocket data for real-time chart updates
+        setChartData(stats.eventsPerMinute);
+      } else {
+        console.log('WebSocket data has no meaningful values, keeping API data');
+      }
+    }
+  }, [stats.eventsPerMinute, isClient, isAuthenticated, authLoading]);
+
+  // Refresh API data when WebSocket stats update (for other components)
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && dataInitialized && stats.totalEvents > 0) {
-      // Refresh data when stats change (new events received)
+      // Refresh API data when stats change (new events received)
       const refreshTimer = setTimeout(() => {
         loadData(selectedTimeRange);
       }, 2000); // Refresh 2 seconds after stats update
@@ -328,12 +347,30 @@ export default function Home() {
             <Typography variant="h6" color="text.secondary">
               No events data available for the selected time range.
             </Typography>
+            <Button 
+              variant="outlined" 
+              onClick={() => loadData(selectedTimeRange)}
+              sx={{ mt: 2 }}
+            >
+              Retry Load Data
+            </Button>
           </Box>
         ) : (
           <>
             <EventsPerMinuteChart 
               data={chartData}
-              title={`Events per Minute (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
+              title={(() => {
+                switch (selectedTimeRange) {
+                  case 'hour':
+                    return 'Events per Minute (Hour)';
+                  case 'day':
+                    return 'Events per Hour (Today)';
+                  case 'week':
+                    return 'Events per Day (Week)';
+                  default:
+                    return 'Events per Minute';
+                }
+              })()}
             />
             <TopEventTypes 
               data={topEventTypes} 
