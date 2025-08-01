@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Container, Typography, Box, Chip, Stack, Button, Alert, Paper } from '@mui/material';
 import { Analytics, Timeline, Login, Lock } from '@mui/icons-material';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -12,6 +12,10 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useApi } from '@/services/api';
 import { useAuth0 } from '@auth0/auth0-react';
 
+// Memoized chart components to prevent unnecessary re-renders
+const MemoizedEventsPerMinuteChart = memo(EventsPerMinuteChart);
+const MemoizedTopEventTypes = memo(TopEventTypes);
+
 export default function Home() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('hour');
   const [chartData, setChartData] = useState<Array<{timestamp: string; count: number}>>([]);
@@ -21,9 +25,44 @@ export default function Home() {
   const [lastLoadTime, setLastLoadTime] = useState<number>(0);
   const [dataInitialized, setDataInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastDataUpdate, setLastDataUpdate] = useState<number>(0);
+  const [timeRangeLoading, setTimeRangeLoading] = useState(false);
+  const [websocketSegmentedData, setWebsocketSegmentedData] = useState<{
+    hour: Array<{timestamp: string; count: number}>;
+    day: Array<{timestamp: string; count: number}>;
+    week: Array<{timestamp: string; count: number}>;
+  }>({ hour: [], day: [], week: [] });
+  
+  const [websocketTopEventTypes, setWebsocketTopEventTypes] = useState<{
+    hour: Array<{type: string; count: number; percentage: number}>;
+    day: Array<{type: string; count: number; percentage: number}>;
+    week: Array<{type: string; count: number; percentage: number}>;
+  }>({ hour: [], day: [], week: [] });
+  
+  // Update timestamp display every second
+  useEffect(() => {
+    if (lastDataUpdate > 0) {
+      const interval = setInterval(() => {
+        // Force re-render to update the timestamp display
+        setLastDataUpdate(prev => prev);
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [lastDataUpdate]);
   
   // Use WebSocket for real-time stats
   const { stats, connected } = useWebSocket();
+  
+  // Function to get pre-segmented data for a time range
+  const getSegmentedData = useCallback((timeRange: TimeRange) => {
+    return websocketSegmentedData[timeRange] || [];
+  }, [websocketSegmentedData]);
+  
+  // Function to get top event types for a time range
+  const getTopEventTypes = useCallback((timeRange: TimeRange) => {
+    return websocketTopEventTypes[timeRange] || [];
+  }, [websocketTopEventTypes]);
   
   // Use authenticated API service
   const { api, isAuthenticated, loginWithRedirect } = useApi();
@@ -145,6 +184,7 @@ export default function Home() {
       setChartData(chartDataArray);
       setTopEventTypes(topEventTypesArray);
       setDataInitialized(true);
+      setLastDataUpdate(Date.now());
     } catch (error) {
       console.error('Error loading data:', error);
       setError('Failed to load data from server');
@@ -153,6 +193,7 @@ export default function Home() {
       setDataInitialized(true);
     } finally {
       setLoading(false);
+      setTimeRangeLoading(false);
     }
   }, [memoizedApi, lastLoadTime, getAccessTokenSilently]);
 
@@ -165,45 +206,77 @@ export default function Home() {
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && !dataInitialized) {
       console.log('Authentication confirmed, loading initial data');
-      loadData('hour');
-    }
-  }, [isClient, isAuthenticated, authLoading, dataInitialized, loadData]);
-
-  // Load data when time range changes (only if already authenticated and initialized)
-  useEffect(() => {
-    if (isClient && isAuthenticated && !authLoading && dataInitialized) {
-      console.log('Time range changed to:', selectedTimeRange, 'Loading new data...');
-      loadData(selectedTimeRange);
-    }
-  }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, loadData]);
-
-  // Use WebSocket eventsPerMinute data for real-time chart updates
-  useEffect(() => {
-    if (isClient && isAuthenticated && !authLoading && stats.eventsPerMinute.length > 0) {
-      // Check if WebSocket data has meaningful values (not all zeros)
-      const hasData = stats.eventsPerMinute.some(item => item.count > 0);
-      console.log('WebSocket eventsPerMinute data:', stats.eventsPerMinute, 'Has data:', hasData);
       
-      if (hasData) {
-        // Use WebSocket data for real-time chart updates
-        setChartData(stats.eventsPerMinute);
+      // Wait for WebSocket data to be available
+      const hourData = getSegmentedData('hour');
+      const hourTopEventTypes = getTopEventTypes('hour');
+      
+      if (hourData.length > 0) {
+        // Use WebSocket data for initial view
+        setChartData(hourData);
+        setTopEventTypes(hourTopEventTypes);
+        setDataInitialized(true);
       } else {
-        console.log('WebSocket data has no meaningful values, keeping API data');
+        // Wait for WebSocket data to arrive
+        console.log('Waiting for WebSocket data...');
       }
     }
-  }, [stats.eventsPerMinute, isClient, isAuthenticated, authLoading]);
+  }, [isClient, isAuthenticated, authLoading, dataInitialized, getSegmentedData, getTopEventTypes]);
 
-  // Refresh API data when WebSocket stats update (for other components)
+  // Handle time range changes with pre-segmented data
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && dataInitialized) {
+      console.log('Time range changed to:', selectedTimeRange);
+      
+      // Get pre-segmented data for the selected time range
+      const segmentedData = getSegmentedData(selectedTimeRange);
+      const topEventTypesData = getTopEventTypes(selectedTimeRange);
+      console.log('Segmented data for', selectedTimeRange, ':', segmentedData);
+      console.log('Top event types for', selectedTimeRange, ':', topEventTypesData);
+      
+      // Always use WebSocket data - no API fallbacks
+      setTimeRangeLoading(true);
+      setChartData(segmentedData);
+      setTopEventTypes(topEventTypesData);
+      setTimeout(() => setTimeRangeLoading(false), 100);
+    }
+  }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, getSegmentedData, getTopEventTypes]);
+
+  // Store WebSocket segmented data
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && stats.segmentedData) {
+      console.log('Received WebSocket segmented data:', stats.segmentedData);
+      
+      // Store the segmented data regardless of values (structure is what matters)
+      setWebsocketSegmentedData(stats.segmentedData);
+      
+      // Store segmented top event types if available
+      if (stats.topEventTypes) {
+        setWebsocketTopEventTypes(stats.topEventTypes);
+      }
+      
+      // Mark the timestamp of this update
+      setLastDataUpdate(Date.now());
+    }
+  }, [stats.segmentedData, stats.topEventTypes, isClient, isAuthenticated, authLoading]);
+
+  // Update data when WebSocket stats update (no more API calls needed)
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && dataInitialized && stats.totalEvents > 0) {
-      // Refresh API data when stats change (new events received)
-      const refreshTimer = setTimeout(() => {
-        loadData(selectedTimeRange);
-      }, 2000); // Refresh 2 seconds after stats update
-      
-      return () => clearTimeout(refreshTimer);
+      // WebSocket data is automatically updated, no need for API calls
+      console.log('WebSocket data updated, charts will refresh automatically');
     }
-  }, [stats.totalEvents, isClient, isAuthenticated, authLoading, dataInitialized, selectedTimeRange, loadData]);
+  }, [stats.totalEvents, isClient, isAuthenticated, authLoading, dataInitialized]);
+  
+  // Initialize data when WebSocket data becomes available
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && !dataInitialized && websocketSegmentedData.hour.length > 0) {
+      console.log('WebSocket data available, initializing with hour view');
+      setChartData(websocketSegmentedData.hour);
+      setTopEventTypes(websocketTopEventTypes.hour);
+      setDataInitialized(true);
+    }
+  }, [isClient, isAuthenticated, authLoading, dataInitialized, websocketSegmentedData, websocketTopEventTypes]);
 
   // Handle time range changes
   const handleTimeRangeChange = (newRange: TimeRange) => {
@@ -313,7 +386,7 @@ export default function Home() {
           value={stats.totalEvents}
           subtitle="All time events"
           trend="up"
-          trendValue="Live data"
+          trendValue={lastDataUpdate > 0 ? `Updated ${Math.floor((Date.now() - lastDataUpdate) / 1000)}s ago` : "Live data"}
           icon={<Analytics />}
         />
         <StatsCard
@@ -321,7 +394,7 @@ export default function Home() {
           value={stats.eventsThisMinute}
           subtitle="Live count"
           trend="up"
-          trendValue="Real-time"
+          trendValue={lastDataUpdate > 0 ? `Updated ${Math.floor((Date.now() - lastDataUpdate) / 1000)}s ago` : "Real-time"}
           icon={<Timeline />}
         />
       </Box>
@@ -336,7 +409,7 @@ export default function Home() {
           />
         </Box>
         
-        {loading ? (
+        {loading && chartData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <Typography variant="h6" color="text.secondary">
               Loading data...
@@ -357,25 +430,71 @@ export default function Home() {
           </Box>
         ) : (
           <>
-            <EventsPerMinuteChart 
-              data={chartData}
-              title={(() => {
+            <Box sx={{ position: 'relative' }}>
+              {timeRangeLoading && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1,
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Updating...
+                  </Typography>
+                </Box>
+              )}
+              <MemoizedEventsPerMinuteChart 
+                data={chartData}
+                              title={(() => {
                 switch (selectedTimeRange) {
                   case 'hour':
-                    return 'Events per Minute (Hour)';
+                    return 'Events per Minute (Hour) - Live';
                   case 'day':
-                    return 'Events per Hour (Today)';
+                    return 'Events per Hour (Today) - Live';
                   case 'week':
-                    return 'Events per Day (Week)';
+                    return 'Events per Day (Week) - Historical';
                   default:
                     return 'Events per Minute';
                 }
               })()}
-            />
-            <TopEventTypes 
-              data={topEventTypes} 
-              title={`Top 5 Event Types (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
-            />
+              />
+            </Box>
+            <Box sx={{ position: 'relative' }}>
+              {timeRangeLoading && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1,
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Updating...
+                  </Typography>
+                </Box>
+              )}
+              <MemoizedTopEventTypes 
+                data={topEventTypes} 
+                title={`Top 5 Event Types (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
+              />
+            </Box>
           </>
         )}
       </Box>
