@@ -43,10 +43,18 @@ def main():
     global running
     
     webhook_url = os.getenv('WEBHOOK_URL', 'http://localhost:8000/webhook')
+    api_key = os.getenv('WEBHOOK_API_KEY', 'entvas_webhook_secret_key_8797f88b5f2e10fbf09d7ef162ffc75b')
+    
+    # Headers for API key authentication
+    headers = {
+        'Content-Type': 'application/json',
+        'X-API-Key': api_key
+    }
     
     signal.signal(signal.SIGINT, sigint_handler)
     
     print("Starting data generation... Press Ctrl+C to stop")
+    print(f"Using API Key: {api_key[:20]}...")
     
     while running:
         try:
@@ -55,26 +63,26 @@ def main():
             
             if webhook_url:
                 try:
-                    response = requests.post(webhook_url, json=event, timeout=5)
+                    response = requests.post(webhook_url, json=event, headers=headers, timeout=5)
                     print(f"Webhook response: {response.status_code}")
                 except requests.exceptions.RequestException as e:
                     print(f"Webhook error: {e}")
             
-            sleep_time = random.randint(10, 20)
+            sleep_time = random.randint(5, 10)
             
             # Send invalid data if sleep time is >= 15
-            if sleep_time >= 15:
+            if sleep_time >= 8:
                 invalid_event = {
                     "eventType": "invalid_type",
                     "userId": "invalid_user",
                     "timestamp": "invalid-timestamp"
                 }
                 print(json.dumps(invalid_event, indent=2))
-                print("Sending INVALID event to webhook (sleep time >= 15)")
+                print("Sending INVALID event to webhook")
                 
                 if webhook_url:
                     try:
-                        response = requests.post(webhook_url, json=invalid_event, timeout=5)
+                        response = requests.post(webhook_url, json=invalid_event, headers=headers, timeout=5)
                         print(f"Invalid event response: {response.status_code}")
                     except requests.exceptions.RequestException as e:
                         print(f"Invalid event error: {e}")

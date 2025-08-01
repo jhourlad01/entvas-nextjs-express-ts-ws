@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Auth0ProviderWrapper from "@/components/providers/Auth0Provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,11 +35,13 @@ export default function RootLayout({
           minHeight: '100vh',
         }}
       >
-        <Header />
-        <main style={{ flexGrow: 1, padding: '24px 16px' }}>
-          {children} 
-        </main>
-        <Footer />
+        <Auth0ProviderWrapper>
+          <Header />
+          <main style={{ flexGrow: 1, padding: '24px 16px' }}>
+            {children} 
+          </main>
+          <Footer />
+        </Auth0ProviderWrapper>
       </body>
     </html>
   );

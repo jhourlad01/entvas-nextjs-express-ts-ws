@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface StatsData {
   totalEvents: number;
@@ -18,6 +18,7 @@ export function useWebSocket() {
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUpdateRef = useRef<number>(0);
 
   const connect = useCallback(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
@@ -39,7 +40,12 @@ export function useWebSocket() {
       try {
         const data = JSON.parse(event.data);
         if (data.stats) {
-          setStats(data.stats);
+          const now = Date.now();
+          // Throttle updates to prevent excessive re-renders (max once per second)
+          if (now - lastUpdateRef.current > 1000) {
+            setStats(data.stats);
+            lastUpdateRef.current = now;
+          }
         }
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err);
@@ -73,5 +79,12 @@ export function useWebSocket() {
     };
   }, [connect]);
 
-  return { stats, connected, error };
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
+    stats,
+    connected,
+    error
+  }), [stats, connected, error]);
+
+  return result;
 } 

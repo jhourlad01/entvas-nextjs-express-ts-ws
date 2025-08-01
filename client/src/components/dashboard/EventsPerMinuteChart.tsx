@@ -10,6 +10,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
   ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
@@ -22,7 +23,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface EventData {
@@ -101,9 +103,7 @@ export default function EventsPerMinuteChart({
         },
         ticks: {
           color: '#666',
-          font: {
-            size: 12,
-          },
+          maxRotation: 45,
         },
       },
       y: {
@@ -113,44 +113,20 @@ export default function EventsPerMinuteChart({
         },
         ticks: {
           color: '#666',
-          font: {
-            size: 12,
-          },
         },
       },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
     },
   };
 
   return (
-    <Card sx={{ height: '100%', minHeight: 400 }}>
+    <Card sx={{ height: 400 }}>
       <CardContent>
-        <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+        <Typography variant="h6" gutterBottom>
           {title}
         </Typography>
-        
-        {data.length > 0 ? (
-          <Box sx={{ height: 300, position: 'relative' }}>
-            <Line data={chartData} options={options} />
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              height: 300,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'text.secondary',
-            }}
-          >
-            <Typography variant="body2">
-              No data available
-            </Typography>
-          </Box>
-        )}
+        <Box sx={{ height: 320, position: 'relative' }}>
+          <Line data={chartData} options={options} />
+        </Box>
       </CardContent>
     </Card>
   );

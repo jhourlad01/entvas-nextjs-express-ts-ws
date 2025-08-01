@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,7 +15,8 @@ model Event {
   eventType  String
   userId     String
   timestamp  DateTime
-  metadata   Json?
+  metadata   String? // SQLite doesn't support Json, using String instead
+  receivedAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
   @@index([timestamp, eventType])
@@ -23,8 +24,6 @@ model Event {
   @@index([eventType, timestamp])
   @@map("events")
 }
-
-
 
 model User {
   id       String @id @default(uuid())

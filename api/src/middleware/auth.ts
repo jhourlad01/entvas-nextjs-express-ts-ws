@@ -73,6 +73,31 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+// API Key authentication for webhooks
+export const authenticateApiKey = (req: Request, res: Response, next: NextFunction): void => {
+  const apiKey = req.headers['x-api-key'];
+  const expectedApiKey = process.env['WEBHOOK_API_KEY'];
+
+  if (!expectedApiKey) {
+    console.error('WEBHOOK_API_KEY not configured in environment');
+    res.status(500).json({ 
+      success: false, 
+      error: 'Server configuration error' 
+    });
+    return;
+  }
+
+  if (!apiKey || apiKey !== expectedApiKey) {
+    res.status(401).json({ 
+      success: false, 
+      error: 'Invalid or missing API key' 
+    });
+    return;
+  }
+
+  next();
+};
+
 export const requireRole = (requiredRole: string) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {

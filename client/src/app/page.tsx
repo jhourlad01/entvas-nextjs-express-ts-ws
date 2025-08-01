@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Container, Typography, Box, Chip, Stack } from '@mui/material';
-import { Analytics, Timeline } from '@mui/icons-material';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Container, Typography, Box, Chip, Stack, Button, Alert, Paper } from '@mui/material';
+import { Analytics, Timeline, Login, Lock } from '@mui/icons-material';
 import StatsCard from '@/components/dashboard/StatsCard';
 import EventsPerMinuteChart from '@/components/dashboard/EventsPerMinuteChart';
 import TopEventTypes from '@/components/dashboard/TopEventTypes';
@@ -10,74 +10,7 @@ import TimeFilter, { TimeRange } from '@/components/dashboard/TimeFilter';
 import { ExportButton } from '@/components/ExportButton';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useApi } from '@/services/api';
-
-// Generate live data for demonstration
-const generateLiveData = (timeRange: TimeRange) => {
-  const now = new Date();
-  const data = [];
-  
-  let dataPoints: number;
-  let intervalMinutes: number;
-  
-  switch (timeRange) {
-    case 'hour':
-      dataPoints = 60; // 60 minutes
-      intervalMinutes = 1;
-      break;
-    case 'day':
-      dataPoints = 24; // 24 hours
-      intervalMinutes = 60;
-      break;
-    case 'week':
-      dataPoints = 7; // 7 days
-      intervalMinutes = 1440; // 24 * 60 minutes
-      break;
-    default:
-      dataPoints = 24;
-      intervalMinutes = 60;
-  }
-  
-  for (let i = dataPoints - 1; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * intervalMinutes * 60000);
-    data.push({
-      timestamp: time.toISOString(),
-      count: Math.floor(Math.random() * 50) + 10, // Random count between 10-60
-    });
-  }
-  
-  return data;
-};
-
-const generateTopEventTypes = (timeRange: TimeRange) => {
-  const types = ['page_view', 'button_click', 'form_submit', 'api_call', 'error_log'];
-  
-  // Adjust total based on time range
-  let baseTotal: number;
-  switch (timeRange) {
-    case 'hour':
-      baseTotal = 1000; // Lower for 1 hour
-      break;
-    case 'day':
-      baseTotal = 5000; // Medium for 24 hours
-      break;
-    case 'week':
-      baseTotal = 25000; // Higher for 7 days
-      break;
-    default:
-      baseTotal = 5000;
-  }
-  
-  const total = Math.floor(Math.random() * (baseTotal * 0.3)) + baseTotal;
-  
-  return types.map((type) => {
-    const count = Math.floor(Math.random() * (total * 0.4)) + 50;
-    return {
-      type,
-      count,
-      percentage: (count / total) * 100,
-    };
-  }).sort((a, b) => b.count - a.count).slice(0, 5);
-};
+import { useAuth0 } from '@auth0/auth0-react';
 
 export default function Home() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('hour');
@@ -85,30 +18,68 @@ export default function Home() {
   const [topEventTypes, setTopEventTypes] = useState<Array<{type: string; count: number; percentage: number}>>([]);
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState<number>(0);
+  const [dataInitialized, setDataInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Use WebSocket for real-time stats
   const { stats, connected } = useWebSocket();
   
   // Use authenticated API service
-  const api = useApi();
+  const { api, isAuthenticated, loginWithRedirect } = useApi();
+  const { isLoading: authLoading, getAccessTokenSilently } = useAuth0();
+
+  // Memoize the API methods to prevent unnecessary re-renders
+  const memoizedApi = useMemo(() => ({
+    getEvents: api.getEvents,
+    getStats: api.getStats,
+  }), [api]);
 
   // Load data from API based on time range
   const loadData = useCallback(async (timeRange: TimeRange) => {
+    const now = Date.now();
+    const timeSinceLastLoad = now - lastLoadTime;
+    
+    // Prevent loading data more frequently than every 5 seconds
+    if (timeSinceLastLoad < 5000) {
+      console.log('Skipping data load - too recent:', timeSinceLastLoad, 'ms ago');
+      return;
+    }
+    
     try {
       setLoading(true);
+      setError(null);
+      setLastLoadTime(now);
       console.log('Loading data for time range:', timeRange);
       
+      // Ensure we have a valid token before making API calls
+      try {
+        await getAccessTokenSilently();
+      } catch (tokenError) {
+        console.error('Failed to get access token:', tokenError);
+        throw new Error('Authentication token not available');
+      }
+      
       const [eventsResponse, statsResponse] = await Promise.all([
-        api.getEvents(timeRange),
-        api.getStats(timeRange)
+        memoizedApi.getEvents(timeRange),
+        memoizedApi.getStats(timeRange)
       ]);
 
-      console.log('API Response - Events:', eventsResponse.events.length, 'Stats:', statsResponse);
+      console.log('API Response - Events:', eventsResponse, 'Stats:', statsResponse);
+
+      // Check if responses have the expected structure
+      if (!eventsResponse || !eventsResponse.data || !Array.isArray(eventsResponse.data.events)) {
+        throw new Error('Invalid events response structure');
+      }
+
+      if (!statsResponse || !statsResponse.data) {
+        throw new Error('Invalid stats response structure');
+      }
 
       // Convert events to chart data format based on time range
       const eventsByTime = new Map<string, number>();
       
-      eventsResponse.events.forEach((event: { receivedAt: string }) => {
+      eventsResponse.data.events.forEach((event: { receivedAt: string }) => {
         const date = new Date(event.receivedAt);
         let timeKey: string;
         
@@ -158,8 +129,9 @@ export default function Home() {
       console.log('Chart data array:', chartDataArray);
 
       // Convert stats to top event types format
-      const totalEvents = statsResponse.totalEvents;
-      const topEventTypesArray = Object.entries(statsResponse.statistics)
+      const totalEvents = statsResponse.data.totalEvents || 0;
+      const statistics = statsResponse.data.statistics || {};
+      const topEventTypesArray = Object.entries(statistics)
         .map(([type, count]) => ({
           type,
           count: count as number,
@@ -170,34 +142,107 @@ export default function Home() {
 
       setChartData(chartDataArray);
       setTopEventTypes(topEventTypesArray);
+      setDataInitialized(true);
     } catch (error) {
       console.error('Error loading data:', error);
-      // Fallback to mock data on error
-      console.log('Falling back to mock data');
-      setChartData(generateLiveData(timeRange));
-      setTopEventTypes(generateTopEventTypes(timeRange));
+      setError('Failed to load data from server');
+      setChartData([]);
+      setTopEventTypes([]);
+      setDataInitialized(true);
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [memoizedApi, lastLoadTime, getAccessTokenSilently]);
 
   // Initialize data on client side to prevent hydration errors
   useEffect(() => {
     setIsClient(true);
-    loadData('hour');
-  }, [loadData]);
+  }, []);
 
-  // Load data when time range changes
+  // Load data when authentication is confirmed and component is ready
   useEffect(() => {
-    if (isClient) {
+    if (isClient && isAuthenticated && !authLoading && !dataInitialized) {
+      console.log('Authentication confirmed, loading initial data');
+      loadData('hour');
+    }
+  }, [isClient, isAuthenticated, authLoading, dataInitialized, loadData]);
+
+  // Load data when time range changes (only if already authenticated and initialized)
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && dataInitialized) {
       loadData(selectedTimeRange);
     }
-  }, [selectedTimeRange, isClient, loadData]);
+  }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, loadData]);
+
+  // Refresh data when WebSocket stats update (indicating new events)
+  useEffect(() => {
+    if (isClient && isAuthenticated && !authLoading && dataInitialized && stats.totalEvents > 0) {
+      // Refresh data when stats change (new events received)
+      const refreshTimer = setTimeout(() => {
+        loadData(selectedTimeRange);
+      }, 2000); // Refresh 2 seconds after stats update
+      
+      return () => clearTimeout(refreshTimer);
+    }
+  }, [stats.totalEvents, isClient, isAuthenticated, authLoading, dataInitialized, selectedTimeRange, loadData]);
 
   // Handle time range changes
   const handleTimeRangeChange = (newRange: TimeRange) => {
     setSelectedTimeRange(newRange);
   };
+
+  // Handle login
+  const handleLogin = () => {
+    loginWithRedirect();
+  };
+
+  // Show loading state while Auth0 is initializing
+  if (authLoading) {
+    return (
+      <Container maxWidth="xl">
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <Typography variant="h6" color="text.secondary">
+            Loading authentication...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Show login required screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '70vh',
+          textAlign: 'center'
+        }}>
+          <Paper elevation={3} sx={{ p: 6, borderRadius: 2 }}>
+            <Lock sx={{ fontSize: 64, color: 'primary.main', mb: 3 }} />
+            <Typography variant="h4" component="h1" gutterBottom>
+              Authentication Required
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              You need to be logged in to access the Events Analytics Dashboard.
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Login />}
+              onClick={handleLogin}
+              sx={{ px: 4, py: 1.5 }}
+            >
+              Login to Continue
+            </Button>
+          </Paper>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="xl">
@@ -230,7 +275,12 @@ export default function Home() {
         </Stack>
       </Box>
 
-
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Stats Cards */}
       <Box sx={{ 
@@ -257,8 +307,6 @@ export default function Home() {
         />
       </Box>
 
-
-
       {/* Charts and Analytics */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Time Filter - positioned before Events per Minute chart */}
@@ -269,10 +317,16 @@ export default function Home() {
           />
         </Box>
         
-        {loading || chartData.length === 0 ? (
+        {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <Typography variant="h6" color="text.secondary">
-              {loading ? 'Loading data...' : `No data available (chartData.length: ${chartData.length})`}
+              Loading data...
+            </Typography>
+          </Box>
+        ) : chartData.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+            <Typography variant="h6" color="text.secondary">
+              No events data available for the selected time range.
             </Typography>
           </Box>
         ) : (
