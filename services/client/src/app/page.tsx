@@ -472,11 +472,11 @@ export default function Home() {
                               title={(() => {
                 switch (selectedTimeRange) {
                   case 'hour':
-                    return 'Events per Minute (Hour) - Live';
+                    return 'Events per Minute (Hour) ';
                   case 'day':
-                    return 'Events per Hour (Today) - Live';
+                    return 'Events per Hour (Today) ';
                   case 'week':
-                    return 'Events per Day (Week) - Historical';
+                    return 'Events per Day (Week) ';
                   default:
                     return 'Events per Minute';
                 }

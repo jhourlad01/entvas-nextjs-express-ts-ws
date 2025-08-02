@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { EventService } from './eventService';
+import { format, parseISO, startOfHour, startOfDay, subHours, subDays } from 'date-fns';
 
 interface ConnectedClient {
   ws: WebSocket;
@@ -147,7 +148,7 @@ class WebSocketService {
       const minuteEnd = new Date(minuteStart.getTime() + 60 * 1000);
       
       const minuteEvents = allEvents.filter(event => {
-        const eventTime = new Date(event.receivedAt);
+        const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
         return eventTime >= minuteStart && eventTime < minuteEnd;
       });
       
@@ -163,12 +164,21 @@ class WebSocketService {
   // Helper method to calculate day data (last 24 hours, grouped by hour)
   private calculateDayData(allEvents: any[], now: Date): Array<{timestamp: string; count: number}> {
     const hourlyData = new Map<string, number>();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneDayAgo = subHours(now, 24);
     
+    // Create 24 sequential hour buckets
+    for (let i = 0; i < 24; i++) {
+      const hourStart = startOfHour(subHours(now, 23 - i));
+      const hourKey = format(hourStart, 'yyyy-MM-dd\'T\'HH');
+      hourlyData.set(hourKey, 0); // Initialize with 0
+    }
+    
+    // Count events in each hour bucket
     allEvents.forEach(event => {
-      const eventTime = new Date(event.receivedAt);
+      const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
       if (eventTime >= oneDayAgo) {
-        const hourKey = eventTime.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+        const hourStart = startOfHour(eventTime);
+        const hourKey = format(hourStart, 'yyyy-MM-dd\'T\'HH');
         hourlyData.set(hourKey, (hourlyData.get(hourKey) || 0) + 1);
       }
     });
@@ -176,18 +186,27 @@ class WebSocketService {
     return Array.from(hourlyData.entries()).map(([timestamp, count]) => ({
       timestamp: timestamp + ':00:00.000Z',
       count
-    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    })).sort((a, b) => parseISO(a.timestamp).getTime() - parseISO(b.timestamp).getTime());
   }
 
   // Helper method to calculate week data (last 7 days, grouped by day)
   private calculateWeekData(allEvents: any[], now: Date): Array<{timestamp: string; count: number}> {
     const dailyData = new Map<string, number>();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = subDays(now, 7);
     
+    // Create 7 sequential day buckets
+    for (let i = 0; i < 7; i++) {
+      const dayStart = startOfDay(subDays(now, 6 - i));
+      const dayKey = format(dayStart, 'yyyy-MM-dd');
+      dailyData.set(dayKey, 0); // Initialize with 0
+    }
+    
+    // Count events in each day bucket
     allEvents.forEach(event => {
-      const eventTime = new Date(event.receivedAt);
+      const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
       if (eventTime >= oneWeekAgo) {
-        const dayKey = eventTime.toISOString().slice(0, 10); // YYYY-MM-DD
+        const dayStart = startOfDay(eventTime);
+        const dayKey = format(dayStart, 'yyyy-MM-dd');
         dailyData.set(dayKey, (dailyData.get(dayKey) || 0) + 1);
       }
     });
@@ -195,7 +214,7 @@ class WebSocketService {
     return Array.from(dailyData.entries()).map(([timestamp, count]) => ({
       timestamp: timestamp + 'T00:00:00.000Z',
       count
-    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    })).sort((a, b) => parseISO(a.timestamp).getTime() - parseISO(b.timestamp).getTime());
   }
 
   // Helper method to calculate top event types for a specific time range
@@ -204,24 +223,27 @@ class WebSocketService {
     
     switch (timeRange) {
       case 'hour': {
-        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        filteredEvents = allEvents.filter(event => 
-          new Date(event.receivedAt) >= oneHourAgo
-        );
+        const oneHourAgo = subHours(now, 1);
+        filteredEvents = allEvents.filter(event => {
+          const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
+          return eventTime >= oneHourAgo;
+        });
         break;
       }
       case 'day': {
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        filteredEvents = allEvents.filter(event => 
-          new Date(event.receivedAt) >= oneDayAgo
-        );
+        const oneDayAgo = subHours(now, 24);
+        filteredEvents = allEvents.filter(event => {
+          const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
+          return eventTime >= oneDayAgo;
+        });
         break;
       }
       case 'week': {
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filteredEvents = allEvents.filter(event => 
-          new Date(event.receivedAt) >= oneWeekAgo
-        );
+        const oneWeekAgo = subDays(now, 7);
+        filteredEvents = allEvents.filter(event => {
+          const eventTime = event.receivedAt instanceof Date ? event.receivedAt : parseISO(event.receivedAt);
+          return eventTime >= oneWeekAgo;
+        });
         break;
       }
     }

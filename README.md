@@ -11,7 +11,7 @@ entvas/
 ├── services/
 │   ├── api/           # Node.js/Express API service
 │   ├── client/        # Next.js/React client service  
-│   ├── database/      # PostgreSQL database service
+│   ├── postgres/      # PostgreSQL database service
 │   └── nginx/         # Nginx reverse proxy service
 ├── docker-compose.yml # Multi-service orchestration
 ├── feeder.py         # Event simulation script
@@ -42,7 +42,7 @@ entvas/
   - Chart.js visualizations
   - Instant filter switching (no API calls)
 
-### **Database Service** (`services/database/`)
+### **PostgreSQL Service** (`services/postgres/`)
 - **Technology**: PostgreSQL 15
 - **Port**: 5432
 - **Features**:
@@ -208,7 +208,7 @@ npm run dev
 ### Database Management
 ```bash
 # Access database
-docker-compose exec database psql -U entvas_user -d entvas_db
+docker-compose exec postgres psql -U entvas_user -d entvas_db
 
 # Run migrations
 cd services/api
@@ -223,20 +223,20 @@ The database is automatically started with Docker Compose:
 
 ```bash
 # Start PostgreSQL
-docker-compose up -d database
+docker-compose up -d postgres
 
 # Check if service is running
-docker-compose ps database
+docker-compose ps postgres
 ```
 
 ### Database Connection Details
 
-- **Host**: `localhost` (or `database` from within containers)
+- **Host**: `localhost` (or `postgres` from within containers)
 - **Port**: `5432`
 - **Database**: `entvas_db`
 - **Username**: `entvas_user`
 - **Password**: `entvas_password`
-- **Connection String**: `postgresql://entvas_user:entvas_password@database:5432/entvas_db`
+- **Connection String**: `postgresql://entvas_user:entvas_password@postgres:5432/entvas_db`
 
 ### Database Schema
 
@@ -297,16 +297,16 @@ npm run db:studio
 
 ```bash
 # Backup database
-docker-compose exec database pg_dump -U entvas_user entvas_db > backup.sql
+docker-compose exec postgres pg_dump -U entvas_user entvas_db > backup.sql
 
 # Restore database
-docker-compose exec -T database psql -U entvas_user entvas_db < backup.sql
+docker-compose exec -T postgres psql -U entvas_user entvas_db < backup.sql
 
 # View database size
-docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT pg_size_pretty(pg_database_size('entvas_db'));"
+docker-compose exec postgres psql -U entvas_user -d entvas_db -c "SELECT pg_size_pretty(pg_database_size('entvas_db'));"
 
 # Check table sizes
-docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) FROM pg_tables WHERE schemaname = 'public';"
+docker-compose exec postgres psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) FROM pg_tables WHERE schemaname = 'public';"
 ```
 
 ### Troubleshooting
@@ -319,7 +319,7 @@ docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT scheman
 
 2. **Authentication Failed**
    - Verify credentials in environment variables
-   - Check if database exists: `docker-compose exec database psql -U entvas_user -d entvas_db`
+   - Check if database exists: `docker-compose exec postgres psql -U entvas_user -d entvas_db`
 
 3. **Migration Errors**
    - Reset database: `npm run db:reset`
@@ -329,16 +329,16 @@ docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT scheman
 
 ```bash
 # View database logs
-docker-compose logs database
+docker-compose logs postgres
 
 # Check database health
-docker-compose exec database pg_isready -U entvas_user -d entvas_db
+docker-compose exec postgres pg_isready -U entvas_user -d entvas_db
 
 # Monitor active connections
-docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';"
+docker-compose exec postgres psql -U entvas_user -d entvas_db -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';"
 
 # Check max connections
-docker-compose exec database psql -U entvas_user -d entvas_db -c "SHOW max_connections;"
+docker-compose exec postgres psql -U entvas_user -d entvas_db -c "SHOW max_connections;"
 ```
 
 ### Performance Optimization
@@ -372,9 +372,9 @@ const prisma = new PrismaClient({
 
 Monitor database performance using:
 
-- PostgreSQL logs: `docker-compose logs database`
+- PostgreSQL logs: `docker-compose logs postgres`
 - Application logs for slow queries
-- Database statistics: `docker-compose exec database psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes;"`
+- Database statistics: `docker-compose exec postgres psql -U entvas_user -d entvas_db -c "SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes;"`
 
 ### Testing
 ```bash

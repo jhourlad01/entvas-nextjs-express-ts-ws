@@ -14,6 +14,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { format, parseISO } from 'date-fns';
 
 // Register Chart.js components
 ChartJS.register(
@@ -41,25 +42,25 @@ export default function EventsPerMinuteChart({
   data, 
   title = "Events per Minute" 
 }: EventsPerMinuteChartProps) {
-  // Debug logging
-  console.log('EventsPerMinuteChart received data:', data);
-  console.log('Data length:', data.length);
-  console.log('Data has values:', data.some(item => item.count > 0));
+
   
   // Transform data for Chart.js
   const chartData = {
     labels: data.map(item => {
-      const date = new Date(item.timestamp);
+      const date = parseISO(item.timestamp);
       // Show different formats based on data range
-      if (data.length <= 60) {
-        // For 1 hour view - show minutes
-        return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+      if (data.length <= 7) {
+        // For 7 day view - show days
+        return format(date, 'dd/MM');
       } else if (data.length <= 24) {
         // For 24 hour view - show hours
-        return `${date.getHours()}:00`;
+        return format(date, 'HH:00');
+      } else if (data.length <= 60) {
+        // For 1 hour view - show minutes
+        return format(date, 'HH:mm');
       } else {
-        // For 7 day view - show days
-        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        // Fallback for other ranges
+        return format(date, 'dd/MM');
       }
     }),
     datasets: [
@@ -97,7 +98,21 @@ export default function EventsPerMinuteChart({
         cornerRadius: 8,
         displayColors: false,
         callbacks: {
-          title: (context) => `Time: ${context[0].label}`,
+                     title: (context) => {
+             const dataIndex = context[0].dataIndex;
+             const item = data[dataIndex];
+             const date = parseISO(item.timestamp);
+             
+             if (data.length <= 7) {
+               return `Date: ${format(date, 'dd/MM/yyyy')}`;
+             } else if (data.length <= 24) {
+               return `Time: ${format(date, 'HH:00')}`;
+             } else if (data.length <= 60) {
+               return `Time: ${format(date, 'HH:mm')}`;
+             } else {
+               return `Date: ${format(date, 'dd/MM/yyyy')}`;
+             }
+           },
           label: (context) => `Events: ${context.parsed.y}`,
         },
       },

@@ -1,6 +1,6 @@
 # Nginx Service
 
-Nginx reverse proxy service for load balancing, SSL termination, and static file serving.
+Nginx reverse proxy service for load balancing, SSL termination, and static file serving with enhanced security and configuration control.
 
 ## Features
 
@@ -10,6 +10,44 @@ Nginx reverse proxy service for load balancing, SSL termination, and static file
 - **Static File Serving**: Serves static assets efficiently
 - **Rate Limiting**: Built-in rate limiting for API protection
 - **Caching**: Response caching for improved performance
+
+## Architecture
+
+- **Base Image**: Nginx Alpine
+- **Enhanced Security**: Built-in security hardening and monitoring
+- **SSL Support**: Built-in SSL certificate management
+- **Health Checks**: Built-in health monitoring
+- **Security Hardening**: Proper permissions and user setup
+
+## Configuration Files
+
+### `Dockerfile`
+Production-ready Dockerfile with:
+- Nginx Alpine base image
+- Additional security packages (curl, openssl)
+- Proper directory structure and SSL certificate handling
+- Security-hardened file permissions
+- Built-in health checks
+- Dedicated nginx user for security isolation
+
+### `nginx.conf`
+Main nginx configuration with:
+- **Reverse proxy** routing for API and client services
+- **Rate limiting** for API protection
+- **WebSocket support** for real-time connections
+- **Gzip compression** for performance
+- **Static file caching** for assets
+- **Security headers** and SSL configuration
+
+### SSL Configuration
+SSL certificates should be placed in the `ssl/` directory:
+
+```
+ssl/
+├── cert.pem          # SSL certificate
+├── key.pem           # Private key
+└── dhparam.pem       # Diffie-Hellman parameters (optional)
+```
 
 ## Configuration
 
@@ -58,7 +96,7 @@ ssl/
 ### Development Setup
 ```bash
 # Start nginx service
-docker-compose up nginx
+docker-compose up -d nginx
 
 # Check nginx logs
 docker-compose logs nginx
@@ -66,7 +104,7 @@ docker-compose logs nginx
 
 ### Production Setup
 ```bash
-# Build and start with SSL
+# Deploy nginx service
 docker-compose -f docker-compose.yml up -d nginx
 
 # Verify SSL configuration
@@ -157,12 +195,36 @@ docker-compose exec nginx tail -f /var/log/nginx/error.log
 ```
 
 ### Health Checks
+The service includes built-in health checks:
 ```bash
+# Check service health
+docker-compose ps nginx
+
 # Test nginx configuration
 docker-compose exec nginx nginx -t
 
 # Check nginx status
 docker-compose exec nginx nginx -s status
+```
+
+## Security Features
+
+### Security Enhancements
+- **Security Hardening**: Proper file permissions and user setup
+- **SSL Certificate Management**: Built-in SSL certificate handling
+- **Health Monitoring**: Built-in health checks with curl
+- **Package Management**: Additional security packages (openssl)
+- **User Isolation**: Dedicated nginx user for security
+- **Logging**: Proper log directory setup and permissions
+
+### Security Headers
+```nginx
+# Add security headers
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "no-referrer-when-downgrade" always;
+add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
 ```
 
 ## Performance
