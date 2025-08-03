@@ -1,5 +1,6 @@
 import { ValidationErrorDetail } from './validation';
 export type EventType = 'page_view' | 'user_joined' | 'user_disconnect' | 'log' | 'user_message';
+export type TimeFilter = 'hour' | 'day' | 'week';
 export interface EventMetadata {
     page?: 'home' | 'profile' | 'settings' | 'dashboard';
     browser?: 'chrome' | 'firefox' | 'safari' | 'edge';

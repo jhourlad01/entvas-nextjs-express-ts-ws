@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EventService = void 0;
 const prismaService_1 = __importDefault(require("./prismaService"));
+const statsService_1 = require("./statsService");
 /**
  * Service class for handling event operations
  * Implements IEventService interface for better type safety
@@ -25,6 +26,8 @@ class EventService {
                     ...(event.metadata && { metadata: event.metadata })
                 }
             });
+            // Update pre-calculated statistics
+            await statsService_1.StatsService.updatePreCalculatedStats(event.eventType);
         }
         catch (error) {
             console.error('Error saving event to database:', error);

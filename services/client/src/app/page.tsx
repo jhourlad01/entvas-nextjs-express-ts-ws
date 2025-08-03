@@ -432,7 +432,7 @@ export default function Home() {
           </Box>
         ) : chartData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" sx={{ color: 'white', textAlign: 'center' }}>
               No events data available for the selected time range.
             </Typography>
             <Button 

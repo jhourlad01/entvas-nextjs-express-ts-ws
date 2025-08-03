@@ -15,7 +15,7 @@ export const useApi = () => {
         const token = await getAccessTokenSilently();
         
         // Use the API server URL (port 8000) instead of Next.js port
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
         
         const response = await fetch(`${apiUrl}${endpoint}`, {
           ...options,

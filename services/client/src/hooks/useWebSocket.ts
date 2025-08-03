@@ -31,8 +31,8 @@ export function useWebSocket() {
   const lastUpdateRef = useRef<number>(0);
 
   const connect = useCallback(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost/ws';
-    const reconnectInterval = parseInt(process.env.NEXT_PUBLIC_RECONNECT_INTERVAL || '3000', 10);
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL!;
+    const reconnectInterval = parseInt(process.env.NEXT_PUBLIC_RECONNECT_INTERVAL!, 10);
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

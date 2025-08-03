@@ -24,22 +24,25 @@ npm install
 
 ### Environment Setup
 
-#### Production (Docker)
-The production environment is configured in `.env.production`:
+#### Local Development
+For local development, create a `.env` file in the project root:
 ```bash
-# Production settings for Docker deployment
-NEXT_PUBLIC_WS_URL=ws://localhost/ws
-NEXT_PUBLIC_AUTH0_REDIRECT_URI=http://localhost
-NEXT_PUBLIC_API_URL=http://localhost
-# ... other production settings
+# Create .env file with localhost URLs for development
+NEXT_PUBLIC_AUTH0_DOMAIN=joe-estrella.us.auth0.com
+NEXT_PUBLIC_AUTH0_CLIENT_ID=Wd1t5JLE8OMxtFV0qv2IZ2URagwb0S7V
+NEXT_PUBLIC_AUTH0_REDIRECT_URI=http://localhost:3000
+NEXT_PUBLIC_AUTH0_AUDIENCE=https://joe-estrella.us.auth0.com/api/v2/
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 ```
 
-#### Development (npm)
-For local development, create environment from example:
-```bash
-cp env.example .env.local
-# Edit .env.local with your local configuration
-```
+The `.env` file is ignored by git and Docker.
+
+#### Production (Docker)
+Production environment variables are set via Docker build arguments in `fly.toml`:
+- No hardcoded defaults in code
+- Environment variables are embedded at build time
+- `.env` files are automatically removed during Docker build
 
 ### Development
 ```bash
@@ -64,15 +67,14 @@ npm start
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_WS_URL` | WebSocket server URL | `ws://localhost:8000` |
-| `NEXT_PUBLIC_API_URL` | API server URL | `http://localhost:8000` |
-| `NEXT_PUBLIC_AUTH0_DOMAIN` | Auth0 domain | Required |
-| `NEXT_PUBLIC_AUTH0_CLIENT_ID` | Auth0 client ID | Required |
-| `NEXT_PUBLIC_AUTH0_AUDIENCE` | Auth0 audience | Required |
-| `NEXT_PUBLIC_AUTH0_REDIRECT_URI` | Auth0 redirect URI | `http://localhost:3000` |
-| `NEXT_PUBLIC_RECONNECT_INTERVAL` | WebSocket reconnect interval | `10000` |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_WS_URL` | WebSocket server URL | ✅ |
+| `NEXT_PUBLIC_API_URL` | API server URL | ✅ |
+| `NEXT_PUBLIC_AUTH0_DOMAIN` | Auth0 domain | ✅ |
+| `NEXT_PUBLIC_AUTH0_CLIENT_ID` | Auth0 client ID | ✅ |
+| `NEXT_PUBLIC_AUTH0_AUDIENCE` | Auth0 audience | ✅ |
+| `NEXT_PUBLIC_AUTH0_REDIRECT_URI` | Auth0 redirect URI | ✅ |
 
 ## Architecture
 

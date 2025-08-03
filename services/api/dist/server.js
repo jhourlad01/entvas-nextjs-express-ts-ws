@@ -10,6 +10,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const http_1 = require("http");
 const webhook_1 = __importDefault(require("./routes/webhook"));
 const events_1 = __importDefault(require("./routes/events"));
+const export_1 = __importDefault(require("./routes/export"));
 const index_1 = __importDefault(require("./routes/index"));
 const errorHandling_1 = require("./middleware/errorHandling");
 const logging_1 = require("./middleware/logging");
@@ -28,6 +29,7 @@ app.use(logging_1.requestLogger);
 // Mount routes
 app.use('/webhook', webhook_1.default);
 app.use('/events', events_1.default);
+app.use('/export', export_1.default);
 app.use('/', index_1.default);
 // Error handling middleware
 app.use(errorHandling_1.errorHandler);

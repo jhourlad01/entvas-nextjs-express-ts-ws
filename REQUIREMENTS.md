@@ -1,6 +1,6 @@
 # Entvas Senior Full Stack Developer Technical Assessment
 
-## 🧩 Project: Real-Time Analytics Dashboard
+## Project: Real-Time Analytics Dashboard
 
 ### What You Will Build
 
@@ -23,7 +23,7 @@ A web application that:
 
 ---
 
-## ✅ App Requirements
+## App Requirements
 
 ### Part 1: API (Backend)
 
@@ -43,7 +43,7 @@ A web application that:
 
 ---
 
-## 📦 Event Data Format
+## Event Data Format
 
 ```json
 {
@@ -59,7 +59,7 @@ A web application that:
 
 ---
 
-## 💡 Tips
+## Tips
 
 - Handle invalid data with detailed error responses
 - Optimize database queries (use **indexes**)
@@ -70,7 +70,7 @@ A web application that:
 
 ---
 
-## 🧪 Evaluation Criteria
+## Evaluation Criteria
 
 - Clear and maintainable code
 - Proper error handling
@@ -83,22 +83,22 @@ A web application that:
 
 ---
 
-## 📤 Submission Requirements
+## Submission Requirements
 
-- ✅ Live app URL
-- ✅ Public GitHub repo
-- ✅ README containing:
+- Live app URL
+- Public GitHub repo
+- README containing:
   - How to run the app
   - API usage instructions
   - Database choice and reasoning
   - Design patterns used
   - Scaling strategy
-- ✅ Example API commands (curl/Postman)
-- ✅ Real-time updates must work
+- Example API commands (curl/Postman)
+- Real-time updates must work
 
 ---
 
-## 🌟 Extra Credit (Optional)
+## Extra Credit (Optional)
 
 - Pre-compute stats for faster queries
 - Add dashboard login/password
@@ -109,7 +109,7 @@ A web application that:
 
 ---
 
-## 🧠 For Senior Developers (10+ Years)
+## For Senior Developers (10+ Years)
 
 - Prevent duplicate events
 - Generate complex reports (user behavior)
@@ -121,7 +121,7 @@ A web application that:
 
 ---
 
-## 📬 How to Submit
+## How to Submit
 
 1. **GitHub repo link**
 2. **Live dashboard URL**
@@ -130,6 +130,6 @@ A web application that:
 
 ---
 
-## ❓ Questions?
+## Questions?
 
 Email us — we’re here to help you succeed!

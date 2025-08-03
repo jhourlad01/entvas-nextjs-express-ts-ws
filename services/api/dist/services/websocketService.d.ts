@@ -5,6 +5,10 @@ declare class WebSocketService {
     private sendStatsToClient;
     broadcastStats(): Promise<void>;
     getConnectedClientsCount(): number;
+    private calculateHourData;
+    private calculateDayData;
+    private calculateWeekData;
+    private calculateTopEventTypes;
 }
 export declare const webSocketService: WebSocketService;
 export {};

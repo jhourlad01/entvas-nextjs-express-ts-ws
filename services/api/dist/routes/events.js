@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const eventService_1 = require("../services/eventService");
+const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 /**
  * GET /events - Retrieve events with time-based filtering
@@ -9,7 +10,7 @@ const router = (0, express_1.Router)();
  * - filter: 'hour' | 'day' | 'week' - Filter events from past hour, day, or week (defaults to 'hour')
  * Returns filtered events that have been successfully processed
  */
-router.get('/', async (req, res) => {
+router.get('/', auth_1.authenticateToken, async (req, res) => {
     try {
         const { filter } = req.query;
         let events = await eventService_1.EventService.getAllEvents();
@@ -60,7 +61,7 @@ router.get('/', async (req, res) => {
  * - filter: 'hour' | 'day' | 'week' - Filter events from past hour, day, or week (defaults to 'hour')
  * Returns event counts and statistics for filtered events
  */
-router.get('/stats', async (req, res) => {
+router.get('/stats', auth_1.authenticateToken, async (req, res) => {
     try {
         const { filter } = req.query;
         let events = await eventService_1.EventService.getAllEvents();

@@ -11,6 +11,14 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandling';
 import { requestLogger } from './middleware/logging';
 import { webSocketService } from './services/websocketService';
 
+// Add crash/error logging
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 // Load environment variables
 dotenv.config();
 
@@ -42,7 +50,7 @@ app.use('*', notFoundHandler);
 webSocketService.initialize(server);
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[${new Date().toISOString()}] Server started on port ${PORT}`);
   console.log(`[${new Date().toISOString()}] WebSocket server available at ws://localhost:${PORT}`);
   console.log(`[${new Date().toISOString()}] Available endpoints:`);
