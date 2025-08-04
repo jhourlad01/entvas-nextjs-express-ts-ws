@@ -52,7 +52,7 @@ describe('Export Routes', () => {
       expect(response.text).toContain('page_view');
     });
 
-    it('should handle errors gracefully', async () => {
+    it('should handle database errors gracefully and return 500 status (console.error output indicates test success)', async () => {
       (EventService.getAllEvents as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       const response = await request(app)
