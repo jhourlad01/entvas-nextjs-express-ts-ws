@@ -56,19 +56,6 @@ websocketService_1.webSocketService.initialize(server);
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`[${new Date().toISOString()}] Server started on port ${PORT}`);
-    console.log(`[${new Date().toISOString()}] WebSocket server available at ws://localhost:${PORT}`);
-    console.log(`[${new Date().toISOString()}] Available endpoints:`);
-    console.log(`  POST http://localhost:${PORT}/webhook`);
-    console.log(`  GET  http://localhost:${PORT}/events`);
-    console.log(`  GET  http://localhost:${PORT}/events?filter=hour|day|week`);
-    console.log(`  GET  http://localhost:${PORT}/events/stats`);
-    console.log(`  GET  http://localhost:${PORT}/events/stats?filter=hour|day|week`);
-    console.log(`  GET  http://localhost:${PORT}/users`);
-    console.log(`  GET  http://localhost:${PORT}/organizations`);
-    console.log(`  GET  http://localhost:${PORT}/organizations/my`);
-    console.log(`  GET  http://localhost:${PORT}/health`);
-    console.log(`  GET  http://localhost:${PORT}/`);
-    console.log('---');
 });
 exports.default = app;
 //# sourceMappingURL=server.js.map

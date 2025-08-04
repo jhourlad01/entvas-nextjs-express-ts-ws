@@ -56,12 +56,12 @@ export declare class EventService {
      * @param receivedAt - Timestamp when the event was received
      * @param source - Source identifier (e.g., 'webhook')
      */
-    static logEventDetails(event: Event, receivedAt: Date, source: string): Promise<void>;
+    static logEventDetails(_event: Event, _receivedAt: Date, _source: string): Promise<void>;
     /**
      * Increments invalid events count and prints detailed logs for validation failures
      * @param errors - Array of validation error details
      */
-    static logValidationFailure(errors: ValidationErrorDetail[]): void;
+    static logValidationFailure(_errors: ValidationErrorDetail[]): void;
     /**
      * Returns the total count of invalid events
      * @returns Number of invalid events

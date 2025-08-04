@@ -55,9 +55,9 @@ class WebSocketService {
                 topEventTypes: [], // Keep for backward compatibility
                 segmentedData,
                 segmentedTopEventTypes,
+                rawEvents: allEvents, // Send raw events for client-side filtering
             };
             const message = JSON.stringify({ stats });
-            console.log(`[${new Date().toISOString()}] Sending initial stats to client ${client.id}:`, stats);
             client.ws.send(message);
         }
         catch (error) {
@@ -92,15 +92,14 @@ class WebSocketService {
                 topEventTypes: [], // Keep for backward compatibility
                 segmentedData,
                 segmentedTopEventTypes,
+                rawEvents: allEvents, // Send raw events for client-side filtering
             };
             const message = JSON.stringify({ stats });
-            console.log(`[${new Date().toISOString()}] Broadcasting stats to ${this.clients.length} clients:`, stats);
             this.clients.forEach(client => {
                 if (client.ws.readyState === ws_1.WebSocket.OPEN) {
                     client.ws.send(message);
                 }
             });
-            console.log(`[${new Date().toISOString()}] Broadcasted stats to ${this.clients.length} clients`);
         }
         catch (error) {
             console.error('Error broadcasting stats:', error);

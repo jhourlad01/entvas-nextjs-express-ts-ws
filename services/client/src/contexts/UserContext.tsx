@@ -50,6 +50,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           const createResponse = await api.createUser({
             email: auth0User.email || '',
             name: auth0User.name || null,
+            auth0Sub: auth0User.sub,
           });
           
           if (createResponse.success && createResponse.data) {
@@ -60,7 +61,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.error('Error fetching user data:', error);
         
         // Check if it's a 404 error (user doesn't exist)
-        if (error.message && error.message.includes('404')) {
+        if (error instanceof Error && error.message && error.message.includes('404')) {
           try {
             // Create the user since they don't exist
             const createResponse = await api.createUser({

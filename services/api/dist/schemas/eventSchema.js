@@ -20,11 +20,11 @@ exports.eventSchema = joi_1.default.object({
         'any.only': 'eventType must be one of: page_view, user_joined, user_disconnect, log, user_message'
     }),
     userId: joi_1.default.string()
-        .pattern(/^\d+$/)
+        .uuid()
         .required()
         .messages({
         'any.required': 'userId is required',
-        'string.pattern.base': 'userId must contain only numeric digits'
+        'string.guid': 'userId must be a valid UUID'
     }),
     timestamp: joi_1.default.string()
         .isoDate()

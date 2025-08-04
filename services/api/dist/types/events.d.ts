@@ -17,6 +17,7 @@ export interface EventWithReceivedAt {
     timestamp: string;
     metadata?: EventMetadata | undefined;
     receivedAt: Date;
+    organizationId?: string | null;
 }
 export interface EventStatistics {
     [key: string]: number;

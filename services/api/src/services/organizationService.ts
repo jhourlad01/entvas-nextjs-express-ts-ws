@@ -53,7 +53,7 @@ export class OrganizationService {
       orderBy: { createdAt: 'desc' }
     });
 
-    return organizations.map(org => ({
+    return organizations.map((org: { id: string; name: string; description: string | null; userId: string; createdAt: Date; updatedAt: Date }) => ({
       id: org.id,
       name: org.name,
       description: org.description,
@@ -119,7 +119,7 @@ export class OrganizationService {
       orderBy: { createdAt: 'desc' }
     });
 
-    return organizations.map(org => ({
+    return organizations.map((org: { id: string; name: string; description: string | null; userId: string; createdAt: Date; updatedAt: Date }) => ({
       id: org.id,
       name: org.name,
       description: org.description,
