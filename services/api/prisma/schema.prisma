@@ -10,18 +10,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  organizations Organization[]
+  events        Event[]
+
+  @@map("users")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String   // Owner of the organization
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events      Event[]
+
+  @@map("organizations")
+}
+
 model Event {
-  id         String   @id @default(uuid())
-  eventType  String
-  userId     String
-  timestamp  DateTime
-  metadata   Json? // PostgreSQL supports JSON
-  receivedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
+  id             String       @id @default(uuid())
+  eventType      String
+  userId         String
+  timestamp      DateTime
+  metadata       Json? // PostgreSQL supports JSON
+  receivedAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  organizationId String?      // Optional organization association
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([timestamp, eventType])
   @@index([userId, timestamp])
   @@index([eventType, timestamp])
+  @@index([organizationId, timestamp])
   @@map("events")
 }
 
