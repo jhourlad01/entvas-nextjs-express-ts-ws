@@ -1,10 +1,30 @@
 #!/bin/bash
 
-set -e
-
 # Define shared variables
 API_APP="entvas-api"
 CLIENT_APP="entvas-client"
+
+# Function to deploy with proper error handling
+deploy_app() {
+  local app_name=$1
+  local service_dir=$2
+  local extra_args=$3
+  
+  echo "Deploying $app_name..."
+  cd "$service_dir"
+  
+  # Use immediate strategy to avoid rolling update issues
+  if fly deploy --app "$app_name" --strategy immediate $extra_args; then
+    echo "✅ $app_name deployed successfully"
+    cd ../..
+    return 0
+  else
+    echo "❌ $app_name deployment failed. Showing logs:"
+    fly logs -a "$app_name" | tail -20
+    cd ../..
+    return 1
+  fi
+}
 
 # 1. Set secrets for API
 echo "Setting secrets for API..."
@@ -15,32 +35,15 @@ fly secrets set \
   WEBHOOK_API_KEY="entvas_webhook_secret_key_8797f88b5f2e10fbf09d7ef162ffc75b" \
   -a "$API_APP"
 
-# Check if API changed
-if git diff --quiet HEAD~1 -- services/api; then
-  echo "No changes in API. Skipping deployment."
-else
-  echo "Deploying API..."
-cd services/api
-if ! fly deploy --app "$API_APP" --build-arg CACHEBUST=$(date +%s); then
-  echo "API deployment failed. Showing logs:"
-  fly logs -a "$API_APP" --tail 50
-  exit 1
-fi
-  cd ../..
+# 2. Deploy API
+if ! deploy_app "$API_APP" "services/api" "--build-arg CACHEBUST=$(date +%s)"; then
+  echo "❌ API deployment failed, but continuing with client..."
 fi
 
-# Check if Client changed
-if git diff --quiet HEAD~1 -- services/client; then
-  echo "No changes in Client. Skipping deployment."
-else
-  echo "Deploying Client..."
-  cd services/client
-  if ! fly deploy --app "$CLIENT_APP"; then
-    echo "Client deployment failed. Showing logs:"
-    fly logs -a "$CLIENT_APP" --tail 50
-    exit 1
-  fi
-  cd ../..
+# 3. Deploy Client
+if ! deploy_app "$CLIENT_APP" "services/client" ""; then
+  echo "❌ Client deployment failed"
+  exit 1
 fi
 
 echo "*** Deployment completed for API and Client. ***"

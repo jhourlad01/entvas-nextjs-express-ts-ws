@@ -7,7 +7,6 @@ import {
   Box,
   Card,
   CardContent,
-  CardActions,
   Button,
   Grid,
   Dialog,
@@ -16,7 +15,6 @@ import {
   DialogActions,
   TextField,
   IconButton,
-  Chip,
   Alert,
   CircularProgress,
   Fab
@@ -220,9 +218,9 @@ export default function OrganizationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
           {organizations.map((org) => (
-            <Grid key={org.id} item xs={12} sm={6} md={4}>
+            <Box key={org.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -271,10 +269,10 @@ export default function OrganizationsPage() {
                 </CardContent>
                 
 
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                              </Card>
+              </Box>
+            ))}
+          </Box>
       )}
 
       {/* Create/Edit Dialog */}
