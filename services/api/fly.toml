@@ -23,3 +23,9 @@ memory_mb = 512
 [metrics]
 port = 9091
 path = "/metrics"
+
+[health_check]
+interval = "30s"
+timeout = "10s"
+start_period = "30s"
+retries = 3

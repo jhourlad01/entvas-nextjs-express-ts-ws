@@ -14,12 +14,19 @@ trap cleanup SIGTERM SIGINT
 
 echo "Starting application..."
 
-# Run Prisma migrations with timeout and retry logic
+# Run Prisma migrations in background with timeout
 echo "Running Prisma database push..."
-timeout 60s npx prisma db push --accept-data-loss || {
-    echo "Prisma db push failed or timed out, continuing anyway..."
+timeout 30s npx prisma db push --accept-data-loss &
+PRISMA_PID=$!
+
+# Start the application immediately
+echo "Starting Node.js server..."
+node dist/server.js &
+
+# Wait for Prisma to complete (but don't block server startup)
+wait $PRISMA_PID 2>/dev/null || {
+    echo "Prisma db push completed or timed out"
 }
 
-# Start the application
-echo "Starting Node.js server..."
-exec node dist/server.js 
+# Keep the script running
+wait 
