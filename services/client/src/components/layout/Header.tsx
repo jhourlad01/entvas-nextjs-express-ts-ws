@@ -19,12 +19,12 @@ import {
   Person,
   KeyboardArrowDown
 } from '@mui/icons-material';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useUser } from '@/contexts/UserContext';
 import Image from 'next/image';
 
 export default function Header() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { isAuthenticated, user, loginWithRedirect, logout } = useAuth0();
+  const { isAuthenticated, user, auth0User, isAdmin, login, logout } = useUser();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -35,15 +35,11 @@ export default function Header() {
   };
 
   const handleLogin = () => {
-    loginWithRedirect();
+    login();
   };
 
   const handleLogout = () => {
-    logout({ 
-      logoutParams: {
-        returnTo: window.location.origin
-      }
-    });
+    logout();
     handleMenuClose();
   };
 
@@ -73,10 +69,10 @@ export default function Header() {
                     color: 'white'
                   }}
                 >
-                  {user?.picture ? (
+                  {auth0User?.picture ? (
                     <Image 
-                      src={user.picture} 
-                      alt={user.name || 'User'} 
+                      src={auth0User.picture} 
+                      alt={user?.name || auth0User?.name || 'User'} 
                       width={32}
                       height={32}
                       style={{ borderRadius: '50%' }}
@@ -93,7 +89,7 @@ export default function Header() {
                     display: { xs: 'none', sm: 'block' }
                   }}
                 >
-                  {user?.name || user?.email || 'User'}
+                  {user?.name || auth0User?.name || auth0User?.email || 'User'}
                 </Typography>
                 <KeyboardArrowDown sx={{ color: 'white' }} />
               </Box>
@@ -121,11 +117,16 @@ export default function Header() {
                 <MenuItem disabled sx={{ opacity: 0.7 }}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {user?.name || 'User'}
+                      {user?.name || auth0User?.name || 'User'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {user?.email}
+                      {user?.email || auth0User?.email}
                     </Typography>
+                    {isAdmin && (
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
+                        Admin
+                      </Typography>
+                    )}
                   </Box>
                 </MenuItem>
                 <Divider />

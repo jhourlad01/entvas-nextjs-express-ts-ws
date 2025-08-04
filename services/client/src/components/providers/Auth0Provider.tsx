@@ -2,6 +2,7 @@
 
 import { Auth0Provider } from '@auth0/auth0-react';
 import { ReactNode } from 'react';
+import { UserProvider } from '@/contexts/UserContext';
 
 interface Auth0ProviderWrapperProps {
   children: ReactNode;
@@ -17,7 +18,9 @@ export default function Auth0ProviderWrapper({ children }: Auth0ProviderWrapperP
         audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE!,
       }}
     >
-      {children}
+      <UserProvider>
+        {children}
+      </UserProvider>
     </Auth0Provider>
   );
 } 

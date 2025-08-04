@@ -10,7 +10,8 @@ import TimeFilter, { TimeRange } from '@/components/dashboard/TimeFilter';
 import { ExportButton } from '@/components/ExportButton';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useApi } from '@/services/api';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useUser } from '@/contexts/UserContext';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 // Memoized chart components to prevent unnecessary re-renders
 const MemoizedEventsPerMinuteChart = memo(EventsPerMinuteChart);
@@ -93,22 +94,11 @@ export default function Home() {
   
   // Use authenticated API service
   const { api, isAuthenticated, loginWithRedirect } = useApi();
-  const { isLoading: authLoading, getAccessTokenSilently } = useAuth0();
+  const { isLoading: authLoading, isAuthenticated: userAuthenticated, user, isAdmin } = useUser();
   
-  // Add timeout for Auth0 loading to prevent long loading screens
-  const [authTimeout, setAuthTimeout] = useState(false);
+  // Note: authTimeout was removed as it's no longer needed with the new user context
   
-  useEffect(() => {
-    if (authLoading) {
-      const timer = setTimeout(() => {
-        setAuthTimeout(true);
-      }, 3000); // 3 second timeout
-      
-      return () => clearTimeout(timer);
-    } else {
-      setAuthTimeout(false);
-    }
-  }, [authLoading]);
+
 
   // Memoize the API methods to prevent unnecessary re-renders
   const memoizedApi = useMemo(() => ({
@@ -133,13 +123,7 @@ export default function Home() {
       setLastLoadTime(now);
       console.log('Loading data for time range:', timeRange);
       
-      // Ensure we have a valid token before making API calls
-      try {
-        await getAccessTokenSilently();
-      } catch (tokenError) {
-        console.error('Failed to get access token:', tokenError);
-        throw new Error('Authentication token not available');
-      }
+      // Authentication is handled by the API service
       
       const [eventsResponse, statsResponse] = await Promise.all([
         memoizedApi.getEvents(timeRange),
@@ -237,7 +221,7 @@ export default function Home() {
       setLoading(false);
       setTimeRangeLoading(false);
     }
-  }, [memoizedApi, lastLoadTime, getAccessTokenSilently]);
+  }, [memoizedApi, lastLoadTime]);
 
   // Initialize data on client side to prevent hydration errors
   useEffect(() => {
@@ -342,21 +326,17 @@ export default function Home() {
     loginWithRedirect();
   };
 
-  // Show loading state while Auth0 is initializing (with timeout)
-  if (authLoading && !authTimeout) {
+  // Show loading state while user data is being fetched
+  if (authLoading) {
     return (
       <Container maxWidth="xl">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <Typography variant="h6" color="text.secondary">
-            Loading authentication...
-          </Typography>
-        </Box>
+        <LoadingSpinner message="Loading user data..." />
       </Container>
     );
   }
 
   // Show login required screen if not authenticated
-  if (!isAuthenticated) {
+  if (!userAuthenticated) {
     return (
       <Container maxWidth="md">
         <Box sx={{ 
@@ -401,16 +381,31 @@ export default function Home() {
         alignItems: { xs: 'stretch', sm: 'center' },
         gap: 2
       }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
-          sx={{ 
-            fontWeight: 'bold',
-            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
-          }}
-        >
-          Events Analytics Dashboard
-        </Typography>
+        <Box>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            sx={{ 
+              fontWeight: 'bold',
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+            }}
+          >
+            Events Analytics Dashboard
+          </Typography>
+          {user && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Welcome, {user.name || user.email}
+              {isAdmin && (
+                <Chip 
+                  label="Admin" 
+                  size="small" 
+                  color="primary" 
+                  sx={{ ml: 1, height: 20 }}
+                />
+              )}
+            </Typography>
+          )}
+        </Box>
         <Stack direction="row" spacing={2} alignItems="center">
           <Chip 
             label={connected ? 'Connected' : 'Disconnected'} 
