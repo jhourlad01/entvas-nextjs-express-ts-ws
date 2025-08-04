@@ -45,12 +45,13 @@ export class EventService {
         }
       });
 
-      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date; organizationId: string | null }) => ({
         eventType: event.eventType as EventType,
         userId: event.userId,
         timestamp: event.timestamp.toISOString(),
         metadata: event.metadata as EventMetadata | undefined || undefined,
-        receivedAt: event.createdAt
+        receivedAt: event.createdAt,
+        organizationId: event.organizationId
       }));
     } catch (error) {
       console.error('Error retrieving events from database:', error);
@@ -72,12 +73,13 @@ export class EventService {
         }
       });
 
-      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date; organizationId: string | null }) => ({
         eventType: event.eventType as EventType,
         userId: event.userId,
         timestamp: event.timestamp.toISOString(),
         metadata: event.metadata as EventMetadata | undefined || undefined,
-        receivedAt: event.createdAt
+        receivedAt: event.createdAt,
+        organizationId: event.organizationId
       }));
     } catch (error) {
       console.error('Error retrieving events from database:', error);
@@ -99,12 +101,13 @@ export class EventService {
         }
       });
 
-      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date; organizationId: string | null }) => ({
         eventType: event.eventType as EventType,
         userId: event.userId,
         timestamp: event.timestamp.toISOString(),
         metadata: event.metadata as EventMetadata | undefined || undefined,
-        receivedAt: event.createdAt
+        receivedAt: event.createdAt,
+        organizationId: event.organizationId
       }));
     } catch (error) {
       console.error('Error retrieving events from database:', error);

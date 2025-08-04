@@ -15,7 +15,7 @@ import {
   SelectChangeEvent,
   Stack
 } from '@mui/material';
-import { AccessTime, Business } from '@mui/icons-material';
+import { AccessTime } from '@mui/icons-material';
 import { useApi } from '@/services/api';
 
 export type TimeRange = 'hour' | 'day' | 'week';
@@ -59,9 +59,12 @@ export default function Filters({
         setLoading(true);
         setError(null);
         
+        console.log('Loading organizations for authenticated user...');
         // Get user's organizations
         const response = await api.getMyOrganizations();
+        console.log('Organizations response:', response);
         setOrganizations(response.data || []);
+        console.log('Set organizations:', response.data || []);
       } catch (err) {
         console.error('Failed to load organizations:', err);
         setError('Failed to load organizations');
@@ -85,7 +88,14 @@ export default function Filters({
   return (
     <Card sx={{ height: '100%', minHeight: 80 }}>
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' }, 
+          justifyContent: 'space-between', 
+          gap: 2, 
+          mb: 2 
+        }}>
           {/* Label and Icon */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <AccessTime sx={{ mr: 1, color: 'primary.main' }} />
@@ -93,18 +103,20 @@ export default function Filters({
               {title}
             </Typography>
           </Box>
-        </Box>
-        
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+          
+          {/* Filters aligned to the right */}
+          <Stack 
+            direction={{ xs: 'column', sm: 'row' }} 
+            spacing={2} 
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            sx={{ width: { xs: '100%', md: 'auto' } }}
+          >
           {/* Time Filter */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-              <AccessTime sx={{ mr: 0.5, fontSize: 16 }} />
-              Time Range
-            </Typography>
+          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
             <ButtonGroup 
               variant="outlined" 
               size="medium"
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               {timeRanges.map((range) => (
                 <Button
@@ -124,23 +136,22 @@ export default function Filters({
           </Box>
 
           {/* Organization Filter */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-              <Business sx={{ mr: 0.5, fontSize: 16 }} />
-              Organization
-            </Typography>
+          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
             <FormControl 
               size="medium" 
-              sx={{ minWidth: 200 }}
+              sx={{ 
+                minWidth: { xs: '100%', sm: 200 },
+                width: { xs: '100%', sm: 'auto' }
+              }}
               disabled={loading || !isAuthenticated}
             >
               <InputLabel id="organization-filter-label">
-                {!isAuthenticated ? 'Login Required' : loading ? 'Loading...' : 'Select Organization'}
+                {!isAuthenticated ? 'Login Required' : loading ? 'Loading...' : 'Organization'}
               </InputLabel>
               <Select
                 labelId="organization-filter-label"
                 value={selectedOrganizationId || 'all'}
-                label={!isAuthenticated ? 'Login Required' : loading ? 'Loading...' : 'Select Organization'}
+                label={!isAuthenticated ? 'Login Required' : loading ? 'Loading...' : 'Organization'}
                 onChange={handleOrganizationChange}
                 error={!!error}
               >
@@ -160,6 +171,7 @@ export default function Filters({
             </FormControl>
           </Box>
         </Stack>
+        </Box>
         
         {error && (
           <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>

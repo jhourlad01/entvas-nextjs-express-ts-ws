@@ -1,5 +1,6 @@
 import { Router, Response, Request } from 'express';
 import { OrganizationService } from '../services/organizationService';
+import { UserService } from '../services/userService';
 import { ApiResponse } from '../types';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import { AuthenticatedRequest } from '../types/auth';
@@ -36,8 +37,22 @@ router.get('/', authenticateToken, requireRole('admin'), async (_req: Request, r
  */
 router.get('/my', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
-    const organizations = await OrganizationService.getOrganizationsByUserId(userId);
+    const auth0Sub = (req as AuthenticatedRequest).user.sub; // From JWT token
+    console.log('GET /organizations/my - Auth0 Sub:', auth0Sub);
+    
+    // Find the user by Auth0 sub to get their UUID
+    const user = await UserService.getUserByAuth0Sub(auth0Sub);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'User not found'
+      };
+      return res.status(404).json(response);
+    }
+    
+    console.log('Found user UUID:', user.id);
+    const organizations = await OrganizationService.getOrganizationsByUserId(user.id);
+    console.log('Found organizations:', organizations);
     
     const response: ApiResponse = {
       success: true,

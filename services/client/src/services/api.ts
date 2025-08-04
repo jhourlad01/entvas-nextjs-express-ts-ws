@@ -72,7 +72,10 @@ export const useApi = () => {
     
     // Organization endpoints
     getOrganizations: () => apiCall('/organizations'),
-    getMyOrganizations: () => apiCall('/organizations/my'),
+    getMyOrganizations: () => {
+      console.log('Calling getMyOrganizations API...');
+      return apiCall('/organizations/my');
+    },
     getOrganization: (id: string) => apiCall(`/organizations/${id}`),
     createOrganization: (orgData: { name: string; description?: string }) =>
       apiCall('/organizations', {

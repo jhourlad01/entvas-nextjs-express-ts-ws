@@ -72,6 +72,7 @@ class WebSocketService {
         topEventTypes: [], // Keep for backward compatibility
         segmentedData,
         segmentedTopEventTypes,
+        rawEvents: allEvents, // Send raw events for client-side filtering
       };
 
       const message = JSON.stringify({ stats });
@@ -117,6 +118,7 @@ class WebSocketService {
         topEventTypes: [], // Keep for backward compatibility
         segmentedData,
         segmentedTopEventTypes,
+        rawEvents: allEvents, // Send raw events for client-side filtering
       };
 
       const message = JSON.stringify({ stats });

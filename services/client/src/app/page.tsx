@@ -30,17 +30,26 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [lastDataUpdate, setLastDataUpdate] = useState<number>(0);
   const [timeRangeLoading, setTimeRangeLoading] = useState(false);
-  const [websocketSegmentedData, setWebsocketSegmentedData] = useState<{
+    const [websocketSegmentedData, setWebsocketSegmentedData] = useState<{
     hour: Array<{timestamp: string; count: number}>;
     day: Array<{timestamp: string; count: number}>;
     week: Array<{timestamp: string; count: number}>;
   }>({ hour: [], day: [], week: [] });
-  
+
   const [websocketTopEventTypes, setWebsocketTopEventTypes] = useState<{
     hour: Array<{type: string; count: number; percentage: number}>;
     day: Array<{type: string; count: number; percentage: number}>;
     week: Array<{type: string; count: number; percentage: number}>;
   }>({ hour: [], day: [], week: [] });
+
+  const [rawEvents, setRawEvents] = useState<Array<{
+    eventType: string;
+    userId: string;
+    timestamp: string;
+    metadata?: Record<string, unknown>;
+    receivedAt: string;
+    organizationId?: string;
+  }>>([]);
   
   // Update timestamp display every second
   useEffect(() => {
@@ -57,38 +66,178 @@ export default function Home() {
   // Use WebSocket for real-time stats
   const { stats, connected } = useWebSocket();
   
-  // Function to get pre-segmented data for a time range
-  const getSegmentedData = useCallback((timeRange: TimeRange) => {
-    // Try selected time range first
-    let data = websocketSegmentedData[timeRange] || [];
-    let actualTimeRange = timeRange;
+  // Helper functions to calculate data from raw events
+  const calculateHourData = useCallback((events: typeof rawEvents, now: Date): Array<{timestamp: string; count: number}> => {
+    const eventsPerMinute: Array<{timestamp: string; count: number}> = [];
+    const roundedNow = new Date(now.getTime());
+    roundedNow.setSeconds(0, 0);
     
-    // If empty, fall back to other time ranges in order: hour -> day -> week
-    if (data.length === 0) {
-      const fallbackOrder = ['hour', 'day', 'week'].filter(range => range !== timeRange);
-      for (const fallbackRange of fallbackOrder) {
-        const fallbackData = websocketSegmentedData[fallbackRange as TimeRange] || [];
-        if (fallbackData.length > 0) {
-          data = fallbackData;
-          actualTimeRange = fallbackRange as TimeRange;
-          break;
-        }
-      }
+    for (let i = 0; i < 60; i++) {
+      const minuteStart = new Date(roundedNow.getTime() - (59 - i) * 60 * 1000);
+      const minuteEnd = new Date(minuteStart.getTime() + 60 * 1000);
+      
+      const minuteEvents = events.filter(event => {
+        const eventTime = new Date(event.receivedAt);
+        return eventTime >= minuteStart && eventTime < minuteEnd;
+      });
+      
+      eventsPerMinute.push({
+        timestamp: minuteStart.toISOString(),
+        count: minuteEvents.length
+      });
     }
     
-    return { data, actualTimeRange };
-  }, [websocketSegmentedData]);
+    return eventsPerMinute;
+  }, []);
+
+  const calculateDayData = useCallback((events: typeof rawEvents, now: Date): Array<{timestamp: string; count: number}> => {
+    const hourlyData = new Map<string, number>();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    // Create 24 sequential hour buckets
+    for (let i = 0; i < 24; i++) {
+      const hourStart = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+      hourStart.setMinutes(0, 0, 0);
+      const hourKey = hourStart.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+      hourlyData.set(hourKey, 0);
+    }
+    
+    // Count events in each hour bucket
+    events.forEach(event => {
+      const eventTime = new Date(event.receivedAt);
+      if (eventTime >= oneDayAgo) {
+        const hourStart = new Date(eventTime);
+        hourStart.setMinutes(0, 0, 0);
+        const hourKey = hourStart.toISOString().slice(0, 13);
+        hourlyData.set(hourKey, (hourlyData.get(hourKey) || 0) + 1);
+      }
+    });
+    
+    return Array.from(hourlyData.entries()).map(([timestamp, count]) => ({
+      timestamp: timestamp + ':00:00.000Z',
+      count
+    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, []);
+
+  const calculateWeekData = useCallback((events: typeof rawEvents, now: Date): Array<{timestamp: string; count: number}> => {
+    const dailyData = new Map<string, number>();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Create 7 sequential day buckets
+    for (let i = 0; i < 7; i++) {
+      const dayStart = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayKey = dayStart.toISOString().slice(0, 10); // YYYY-MM-DD
+      dailyData.set(dayKey, 0);
+    }
+    
+    // Count events in each day bucket
+    events.forEach(event => {
+      const eventTime = new Date(event.receivedAt);
+      if (eventTime >= oneWeekAgo) {
+        const dayStart = new Date(eventTime);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayKey = dayStart.toISOString().slice(0, 10);
+        dailyData.set(dayKey, (dailyData.get(dayKey) || 0) + 1);
+      }
+    });
+    
+    return Array.from(dailyData.entries()).map(([timestamp, count]) => ({
+      timestamp: timestamp + 'T00:00:00.000Z',
+      count
+    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, []);
+
+  // Function to get pre-segmented data for a time range
+  const getSegmentedData = useCallback((timeRange: TimeRange) => {
+    // Filter raw events by organization if selected
+    let filteredEvents = rawEvents;
+    if (selectedOrganizationId) {
+      // Filter by specific organization
+      filteredEvents = rawEvents.filter(event => event.organizationId === selectedOrganizationId);
+    } else {
+      // "All Organizations" - show all events (including those without organization)
+      filteredEvents = rawEvents;
+    }
+    
+    // Calculate segmented data from filtered events
+    const now = new Date();
+    let data: Array<{timestamp: string; count: number}> = [];
+    
+    switch (timeRange) {
+      case 'hour':
+        data = calculateHourData(filteredEvents, now);
+        break;
+      case 'day':
+        data = calculateDayData(filteredEvents, now);
+        break;
+      case 'week':
+        data = calculateWeekData(filteredEvents, now);
+        break;
+    }
+    
+    // If no filtered data, fall back to global data
+    if (data.length === 0) {
+      data = websocketSegmentedData[timeRange] || [];
+    }
+    
+    return { data, actualTimeRange: timeRange };
+  }, [rawEvents, selectedOrganizationId, websocketSegmentedData, calculateHourData, calculateDayData, calculateWeekData]);
   
   // Function to get top event types for a time range
   const getTopEventTypes = useCallback((timeRange: TimeRange) => {
-    // Only use the selected time range, no fallback
-    const data = websocketTopEventTypes[timeRange] || [];
-    const actualTimeRange = timeRange;
-
-
-
-    return { data, actualTimeRange };
-  }, [websocketTopEventTypes]);
+    // Filter raw events by organization if selected
+    let filteredEvents = rawEvents;
+    if (selectedOrganizationId) {
+      // Filter by specific organization
+      filteredEvents = rawEvents.filter(event => event.organizationId === selectedOrganizationId);
+    } else {
+      // "All Organizations" - show all events (including those without organization)
+      filteredEvents = rawEvents;
+    }
+    
+    // Calculate top event types from filtered events
+    const now = new Date();
+    let timeFilteredEvents: typeof rawEvents = [];
+    
+    switch (timeRange) {
+      case 'hour':
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        timeFilteredEvents = filteredEvents.filter(event => new Date(event.receivedAt) >= oneHourAgo);
+        break;
+      case 'day':
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        timeFilteredEvents = filteredEvents.filter(event => new Date(event.receivedAt) >= oneDayAgo);
+        break;
+      case 'week':
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        timeFilteredEvents = filteredEvents.filter(event => new Date(event.receivedAt) >= oneWeekAgo);
+        break;
+    }
+    
+    // Calculate top event types
+    const eventTypeCounts = new Map<string, number>();
+    timeFilteredEvents.forEach(event => {
+      eventTypeCounts.set(event.eventType, (eventTypeCounts.get(event.eventType) || 0) + 1);
+    });
+    
+    const totalEvents = timeFilteredEvents.length;
+    const data = Array.from(eventTypeCounts.entries())
+      .map(([type, count]) => ({
+        type,
+        count,
+        percentage: totalEvents > 0 ? (count / totalEvents) * 100 : 0
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+    // If no filtered data, fall back to global data
+    if (data.length === 0) {
+      return { data: websocketTopEventTypes[timeRange] || [], actualTimeRange: timeRange };
+    }
+    
+    return { data, actualTimeRange: timeRange };
+  }, [rawEvents, selectedOrganizationId, websocketTopEventTypes]);
   
   // Use authenticated API service
   const { api, isAuthenticated, loginWithRedirect } = useApi();
@@ -272,10 +421,15 @@ export default function Home() {
         setWebsocketTopEventTypes(stats.segmentedTopEventTypes);
       }
       
+      // Store raw events for client-side filtering
+      if (stats.rawEvents) {
+        setRawEvents(stats.rawEvents);
+      }
+      
       // Mark the timestamp of this update
       setLastDataUpdate(Date.now());
     }
-  }, [stats.segmentedData, stats.segmentedTopEventTypes, isClient, isAuthenticated, authLoading]);
+  }, [stats.segmentedData, stats.segmentedTopEventTypes, stats.rawEvents, isClient, isAuthenticated, authLoading]);
 
   // Update data when WebSocket stats update (no more API calls needed)
   useEffect(() => {
