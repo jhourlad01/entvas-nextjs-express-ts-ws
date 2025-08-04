@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,8 +15,8 @@ model User {
   name          String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  organizations Organization[]
   events        Event[]
+  organizations Organization[]
 
   @@map("users")
 }
@@ -30,24 +27,24 @@ model Organization {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  userId      String   // Owner of the organization
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
   events      Event[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("organizations")
 }
 
 model Event {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   eventType      String
   userId         String
   timestamp      DateTime
-  metadata       Json? // PostgreSQL supports JSON
-  receivedAt     DateTime     @default(now())
-  createdAt      DateTime     @default(now())
-  organizationId String?      // Optional organization association
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadata       Json?
+  receivedAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([timestamp, eventType])
   @@index([userId, timestamp])
@@ -55,5 +52,3 @@ model Event {
   @@index([organizationId, timestamp])
   @@map("events")
 }
-
- 
