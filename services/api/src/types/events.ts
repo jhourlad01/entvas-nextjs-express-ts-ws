@@ -18,6 +18,7 @@ export interface Event {
   userId: string;
   timestamp: string;
   metadata?: EventMetadata;
+  organizationId?: string;
 }
 
 // Event with received timestamp

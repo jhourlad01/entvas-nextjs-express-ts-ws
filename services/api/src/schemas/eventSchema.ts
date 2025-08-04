@@ -45,7 +45,14 @@ export const eventSchema: Joi.ObjectSchema<Event> = Joi.object({
       .messages({
         'any.only': 'browser must be one of: chrome, firefox, safari, edge'
       })
-  }).optional()
+  }).optional(),
+  
+  organizationId: Joi.string()
+    .uuid()
+    .optional()
+    .messages({
+      'string.guid': 'organizationId must be a valid UUID'
+    })
 });
 
 // Type guard to check if an object is a valid Event

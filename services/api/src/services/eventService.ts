@@ -21,7 +21,8 @@ export class EventService {
           eventType: event.eventType,
           userId: event.userId,
           timestamp: new Date(event.timestamp),
-          ...(event.metadata && { metadata: event.metadata as any })
+          ...(event.metadata && { metadata: event.metadata as any }),
+          ...(event.organizationId && { organizationId: event.organizationId })
         }
       });
 

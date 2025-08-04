@@ -40,6 +40,42 @@ Database initialization script that:
 - Sets up indexes for optimal performance
 - Configures initial settings
 
+## Event Data Structure
+
+The database stores events with the following structure:
+
+### Event Table Schema
+```sql
+CREATE TABLE events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    eventType VARCHAR(50) NOT NULL,
+    userId UUID NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    metadata JSONB,
+    createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Event Types
+- `page_view` - User viewed a page
+- `user_joined` - User joined the system
+- `user_disconnect` - User disconnected
+- `log` - General log event
+- `user_message` - User sent a message
+
+### Metadata Structure
+```json
+{
+  "page": "home|profile|settings|dashboard",
+  "browser": "chrome|firefox|safari|edge"
+}
+```
+
+### Indexes for Performance
+- `(timestamp, eventType)` - For time-based filtering with event type
+- `(userId, timestamp)` - For user-specific time-based queries
+- `(eventType, timestamp)` - For event type analysis over time
+
 ## Performance Optimizations
 
 ### Memory Settings

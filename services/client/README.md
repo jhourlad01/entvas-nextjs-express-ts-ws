@@ -115,6 +115,29 @@ src/
 - **Animation Disabled**: Chart animations disabled for performance
 - **Loading States**: Smooth loading transitions
 
+## Webhook Integration
+
+The client dashboard displays real-time analytics from events received via the webhook endpoint. Events are processed by the API service and broadcast to all connected clients via WebSocket.
+
+### Event Types Displayed
+- **Page Views**: User page navigation events
+- **User Joins**: User connection events
+- **User Disconnects**: User disconnection events
+- **Log Events**: General system log events
+- **User Messages**: User communication events
+
+### Real-time Updates
+- **Live Charts**: Events per minute chart updates in real-time
+- **Event Counters**: Total event counts update instantly
+- **Event Distribution**: Top event types chart updates automatically
+- **Time Filtering**: Pre-segmented data enables instant filter switching
+
+### Data Flow
+1. **External System** sends event to `/webhook` endpoint
+2. **API Service** validates and stores the event
+3. **WebSocket** broadcasts updated statistics to all clients
+4. **Dashboard** updates charts and counters instantly
+
 ## Testing
 
 ### Unit Tests

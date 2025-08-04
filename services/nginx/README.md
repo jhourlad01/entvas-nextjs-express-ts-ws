@@ -10,6 +10,7 @@ Nginx reverse proxy service for load balancing, SSL termination, and static file
 - **Static File Serving**: Serves static assets efficiently
 - **Rate Limiting**: Built-in rate limiting for API protection
 - **Caching**: Response caching for improved performance
+- **Webhook Routing**: Direct routing for webhook endpoints with proper headers
 
 ## Architecture
 
@@ -67,6 +68,15 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
     
+    # Webhook endpoint (direct to API)
+    location /webhook {
+        proxy_pass http://api:8000/webhook;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
     # Client routes
     location / {
         proxy_pass http://client:3000;
@@ -85,6 +95,26 @@ ssl/
 ├── key.pem           # Private key
 └── dhparam.pem       # Diffie-Hellman parameters (optional)
 ```
+
+### Webhook Endpoint Routing
+The nginx configuration includes specific routing for webhook endpoints:
+
+```nginx
+# Webhook endpoint (direct to API)
+location /webhook {
+    proxy_pass http://api:8000/webhook;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+This configuration ensures:
+- **Direct Routing**: Webhook requests go directly to the API service
+- **Header Preservation**: All necessary headers are forwarded
+- **IP Forwarding**: Client IP addresses are properly forwarded
+- **Protocol Forwarding**: Original protocol information is preserved
 
 ## Setup
 
