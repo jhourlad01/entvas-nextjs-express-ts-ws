@@ -18,6 +18,7 @@ const MemoizedTopEventTypes = memo(TopEventTypes);
 
 export default function Home() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('hour');
+  const [actualDisplayTimeRange, setActualDisplayTimeRange] = useState<TimeRange>('hour');
   const [chartData, setChartData] = useState<Array<{timestamp: string; count: number}>>([]);
   const [topEventTypes, setTopEventTypes] = useState<Array<{type: string; count: number; percentage: number}>>([]);
   const [isClient, setIsClient] = useState(false);
@@ -56,12 +57,51 @@ export default function Home() {
   
   // Function to get pre-segmented data for a time range
   const getSegmentedData = useCallback((timeRange: TimeRange) => {
-    return websocketSegmentedData[timeRange] || [];
+    // Try selected time range first
+    let data = websocketSegmentedData[timeRange] || [];
+    let actualTimeRange = timeRange;
+    
+    // If empty, fall back to other time ranges in order: hour -> day -> week
+    if (data.length === 0) {
+      const fallbackOrder = ['hour', 'day', 'week'].filter(range => range !== timeRange);
+      for (const fallbackRange of fallbackOrder) {
+        const fallbackData = websocketSegmentedData[fallbackRange as TimeRange] || [];
+        if (fallbackData.length > 0) {
+          data = fallbackData;
+          actualTimeRange = fallbackRange as TimeRange;
+          break;
+        }
+      }
+    }
+    
+    return { data, actualTimeRange };
   }, [websocketSegmentedData]);
   
   // Function to get top event types for a time range
   const getTopEventTypes = useCallback((timeRange: TimeRange) => {
-    return websocketTopEventTypes[timeRange] || [];
+    // Try selected time range first
+    let data = websocketTopEventTypes[timeRange] || [];
+    let actualTimeRange = timeRange;
+    
+    // If empty, fall back to other time ranges in order: hour -> day -> week
+    if (data.length === 0) {
+      const fallbackOrder = ['hour', 'day', 'week'].filter(range => range !== timeRange);
+      for (const fallbackRange of fallbackOrder) {
+        const fallbackData = websocketTopEventTypes[fallbackRange as TimeRange] || [];
+        if (fallbackData.length > 0) {
+          data = fallbackData;
+          actualTimeRange = fallbackRange as TimeRange;
+          break;
+        }
+      }
+    }
+    
+    // Debug logging
+    console.log('getTopEventTypes called with timeRange:', timeRange);
+    console.log('websocketTopEventTypes:', websocketTopEventTypes);
+    console.log('Returning data:', data, 'actualTimeRange:', actualTimeRange);
+    
+    return { data, actualTimeRange };
   }, [websocketTopEventTypes]);
   
   // Use authenticated API service
@@ -226,10 +266,10 @@ export default function Home() {
       const hourData = getSegmentedData('hour');
       const hourTopEventTypes = getTopEventTypes('hour');
       
-      if (hourData.length > 0) {
+      if (hourData.data.length > 0) {
         // Use WebSocket data for initial view
-        setChartData(hourData);
-        setTopEventTypes(hourTopEventTypes);
+        setChartData(hourData.data);
+        setTopEventTypes(hourTopEventTypes.data);
         setDataInitialized(true);
       } else {
         // Wait for WebSocket data to arrive
@@ -251,8 +291,12 @@ export default function Home() {
       
       // Always use WebSocket data - no API fallbacks
       setTimeRangeLoading(true);
-      setChartData(segmentedData);
-      setTopEventTypes(topEventTypesData);
+      setChartData(segmentedData.data);
+      setTopEventTypes(topEventTypesData.data);
+      
+      // Update the actual display time range
+      setActualDisplayTimeRange(segmentedData.actualTimeRange);
+      
       setTimeout(() => setTimeRangeLoading(false), 100);
     }
   }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, getSegmentedData, getTopEventTypes]);
@@ -261,13 +305,17 @@ export default function Home() {
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && stats.segmentedData) {
       console.log('Received WebSocket segmented data:', stats.segmentedData);
+      console.log('Received WebSocket segmentedTopEventTypes:', stats.segmentedTopEventTypes);
       
       // Store the segmented data regardless of values (structure is what matters)
       setWebsocketSegmentedData(stats.segmentedData);
       
       // Store segmented top event types if available
       if (stats.segmentedTopEventTypes) {
+        console.log('Setting websocketTopEventTypes:', stats.segmentedTopEventTypes);
         setWebsocketTopEventTypes(stats.segmentedTopEventTypes);
+      } else {
+        console.log('No segmentedTopEventTypes in WebSocket data');
       }
       
       // Mark the timestamp of this update
@@ -287,11 +335,15 @@ export default function Home() {
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && !dataInitialized && websocketSegmentedData.hour.length > 0) {
       console.log('WebSocket data available, initializing with hour view');
-      setChartData(websocketSegmentedData.hour);
-      setTopEventTypes(websocketTopEventTypes.hour);
+      const hourData = getSegmentedData('hour');
+      const hourTopEventTypes = getTopEventTypes('hour');
+      
+      setChartData(hourData.data);
+      setTopEventTypes(hourTopEventTypes.data);
+      setActualDisplayTimeRange(hourData.actualTimeRange);
       setDataInitialized(true);
     }
-  }, [isClient, isAuthenticated, authLoading, dataInitialized, websocketSegmentedData, websocketTopEventTypes]);
+  }, [isClient, isAuthenticated, authLoading, dataInitialized, websocketSegmentedData, websocketTopEventTypes, getSegmentedData, getTopEventTypes]);
 
   // Handle time range changes
   const handleTimeRangeChange = (newRange: TimeRange) => {
@@ -419,7 +471,7 @@ export default function Home() {
         {/* Time Filter - positioned before Events per Minute chart */}
         <Box sx={{ width: '100%' }}>
           <TimeFilter
-            selectedRange={selectedTimeRange}
+            selectedRange={actualDisplayTimeRange}
             onRangeChange={handleTimeRangeChange}
           />
         </Box>
@@ -470,7 +522,7 @@ export default function Home() {
               <MemoizedEventsPerMinuteChart 
                 data={chartData}
                               title={(() => {
-                switch (selectedTimeRange) {
+                switch (actualDisplayTimeRange) {
                   case 'hour':
                     return 'Events per Minute (Hour) ';
                   case 'day':
@@ -507,7 +559,7 @@ export default function Home() {
               )}
               <MemoizedTopEventTypes 
                 data={topEventTypes} 
-                title={`Top 5 Event Types (${selectedTimeRange === 'hour' ? 'Last Hour' : selectedTimeRange === 'day' ? 'Today' : 'This Week'})`}
+                title={`Top 5 Event Types (${actualDisplayTimeRange === 'hour' ? 'Last Hour' : actualDisplayTimeRange === 'day' ? 'Today' : 'This Week'})`}
               />
             </Box>
           </>

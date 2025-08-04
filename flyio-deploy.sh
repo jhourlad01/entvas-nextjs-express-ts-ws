@@ -10,11 +10,9 @@ CLIENT_APP="entvas-client"
 echo "Setting secrets for API..."
 fly secrets set \
   DATABASE_URL="postgres://postgres:Dr64IHnB6PYz6cUJ@db.oadmpowxrzupmcindpbl.supabase.co:5432/postgres" \
-  AUTH0_DOMAIN="joe-estrella.us.auth0.com" \
-  AUTH0_AUDIENCE="https://joe-estrella.us.auth0.com/api/v2/" \
-  AUTH0_CLIENT_ID="Wd1t5JLE8OMxtFV0qv2IZ2URagwb0S7V" \
+  JWT_ISSUER_DOMAIN="joe-estrella.us.auth0.com" \
+  JWT_AUDIENCE="https://joe-estrella.us.auth0.com/api/v2/" \
   WEBHOOK_API_KEY="entvas_webhook_secret_key_8797f88b5f2e10fbf09d7ef162ffc75b" \
-  NODE_ENV="production" \
   -a "$API_APP"
 
 # Check if API changed

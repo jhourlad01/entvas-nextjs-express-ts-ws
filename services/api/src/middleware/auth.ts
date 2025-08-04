@@ -18,7 +18,7 @@ interface AuthRequest extends Request {
 }
 
 const client = jwksClient({
-  jwksUri: `https://${process.env['AUTH0_DOMAIN']}/.well-known/jwks.json`
+  jwksUri: `https://${process.env['JWT_ISSUER_DOMAIN']}/.well-known/jwks.json`
 });
 
 function getKey(header: jwt.JwtHeader, callback: (err: Error | null, key?: string) => void) {
@@ -46,8 +46,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const audience = process.env['AUTH0_AUDIENCE'];
-    const issuer = `https://${process.env['AUTH0_DOMAIN']}/`;
+    const audience = process.env['JWT_AUDIENCE'];
+    const issuer = `https://${process.env['JWT_ISSUER_DOMAIN']}/`;
 
     jwt.verify(token, getKey, {
       audience,

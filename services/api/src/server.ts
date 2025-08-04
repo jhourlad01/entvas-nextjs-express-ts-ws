@@ -19,6 +19,12 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
+// Memory monitoring
+setInterval(() => {
+  const memUsage = process.memoryUsage();
+  console.log(`Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
+}, 60000); // Log every minute
+
 // Load environment variables
 dotenv.config();
 
@@ -28,7 +34,7 @@ const PORT: number = parseInt(process.env['PORT'] || '3001', 10);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // Limit request body size
 app.use(morgan('combined'));
 
 // Request logging middleware

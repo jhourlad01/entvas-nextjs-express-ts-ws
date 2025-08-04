@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, Typography, List, ListItem, ListItemText, ListItemIcon, Box } from '@mui/material';
+import { Card, CardContent, Typography, List, ListItem, ListItemText, ListItemIcon, Box, useTheme, useMediaQuery } from '@mui/material';
 import { Circle } from '@mui/icons-material';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -37,6 +37,8 @@ export default function TopEventTypes({
   const chartRef = useRef<ChartJS<'pie'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartDimensions, setChartDimensions] = useState({ width: 300, height: 300 });
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Calculate chart dimensions based on container size
   useEffect(() => {
@@ -49,15 +51,25 @@ export default function TopEventTypes({
         const parentGrid = container.closest('[style*="grid"]');
         const parentRect = parentGrid?.getBoundingClientRect() || rect;
         
-        // Calculate available space considering grid layout
-        const availableWidth = parentRect.width * 0.45; // Account for grid gap and list
-        const availableHeight = Math.min(rect.height || 300, 400); // Max height of 400px
+        // Calculate available space considering grid layout and mobile vs desktop
+        let availableWidth, availableHeight;
         
-        const padding = 20;
+        if (isMobile) {
+          // On mobile, use full width minus padding
+          availableWidth = parentRect.width - 40; // Account for padding
+          availableHeight = Math.min(rect.height || 300, 350); // Smaller max height on mobile
+        } else {
+          // On desktop, use half width for the pie chart
+          availableWidth = parentRect.width * 0.45;
+          availableHeight = Math.min(rect.height || 300, 400);
+        }
+        
+        const padding = isMobile ? 10 : 20;
         const size = Math.min(availableWidth - padding, availableHeight - padding);
         
-        // Ensure minimum size
-        const finalSize = Math.max(size, 200);
+        // Ensure minimum size (smaller on mobile)
+        const minSize = isMobile ? 150 : 200;
+        const finalSize = Math.max(size, minSize);
         
         setChartDimensions({ width: finalSize, height: finalSize });
       }
@@ -66,7 +78,7 @@ export default function TopEventTypes({
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  }, [isMobile]);
 
   // Handle resize events to force chart recalculation
   useEffect(() => {
@@ -113,7 +125,7 @@ export default function TopEventTypes({
       },
     },
     layout: {
-      padding: 10, // Reduced padding since we're calculating size
+      padding: isMobile ? 5 : 10, // Reduced padding on mobile
     },
     elements: {
       arc: {
@@ -125,20 +137,20 @@ export default function TopEventTypes({
   };
 
   return (
-    <Card sx={{ height: '100%', minHeight: 500 }}>
+    <Card sx={{ height: '100%', minHeight: isMobile ? 400 : 500 }}>
       <CardContent>
         <Typography variant="h6" component="h3" sx={{ mb: 3, fontWeight: 600 }}>
           {title}
         </Typography>
         
         {data.length > 0 ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 2, md: 3 } }}>
             {/* Pie Chart */}
             <Box 
               ref={containerRef}
               sx={{ 
                 height: 'auto',
-                minHeight: { xs: 250, md: 300 },
+                minHeight: { xs: 200, md: 300 },
                 width: '100%', 
                 pr: { xs: 0, md: 3 },
                 display: 'flex',
@@ -154,7 +166,7 @@ export default function TopEventTypes({
                 justifyContent: 'center'
               }}>
                 <Pie 
-                  key={`pie-${data.length}-${data[0]?.count || 0}`}
+                  key={`pie-${data.length}-${data[0]?.count || 0}-${isMobile}`}
                   data={chartData} 
                   options={options} 
                   ref={chartRef}
@@ -163,39 +175,39 @@ export default function TopEventTypes({
             </Box>
             
             {/* List of Values */}
-            <Box sx={{ pr: 3 }}>
+            <Box sx={{ pr: { xs: 0, md: 3 } }}>
               <List sx={{ p: 0 }}>
                 {data.map((eventType, index) => (
                   <ListItem 
                     key={eventType.type} 
                     sx={{ 
                       px: 0, 
-                      py: 1,
+                      py: { xs: 0.5, md: 1 },
                       borderBottom: index < data.length - 1 ? '1px solid' : 'none',
                       borderColor: 'divider'
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
+                    <ListItemIcon sx={{ minWidth: { xs: 30, md: 40 } }}>
                       <Circle 
                         sx={{ 
                           color: getEventTypeColor(index),
-                          fontSize: 12 
+                          fontSize: { xs: 10, md: 12 }
                         }} 
                       />
                     </ListItemIcon>
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 500, fontSize: { xs: '0.875rem', md: '1rem' } }}>
                             {eventType.type}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                             {eventType.count.toLocaleString()}
                           </Typography>
                         </Box>
                       }
                       secondary={
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                           {eventType.percentage.toFixed(1)}% of total events
                         </Typography>
                       }
@@ -208,7 +220,7 @@ export default function TopEventTypes({
         ) : (
           <Box
             sx={{
-              height: 200,
+              height: { xs: 150, md: 200 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

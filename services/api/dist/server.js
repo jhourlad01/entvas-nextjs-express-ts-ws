@@ -15,6 +15,13 @@ const index_1 = __importDefault(require("./routes/index"));
 const errorHandling_1 = require("./middleware/errorHandling");
 const logging_1 = require("./middleware/logging");
 const websocketService_1 = require("./services/websocketService");
+// Add crash/error logging
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -38,7 +45,7 @@ app.use('*', errorHandling_1.notFoundHandler);
 // Initialize WebSocket server
 websocketService_1.webSocketService.initialize(server);
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`[${new Date().toISOString()}] Server started on port ${PORT}`);
     console.log(`[${new Date().toISOString()}] WebSocket server available at ws://localhost:${PORT}`);
     console.log(`[${new Date().toISOString()}] Available endpoints:`);

@@ -143,52 +143,6 @@ docker run -p 8000:8000 entvas-api
 | `DATABASE_URL` | PostgreSQL connection | Required |
 | `AUTH0_DOMAIN` | Auth0 domain | Required |
 | `AUTH0_AUDIENCE` | Auth0 audience | Required |
-| `AUTH0_CLIENT_ID` | Auth0 client ID | Required |
-| `AUTH0_CLIENT_SECRET` | Auth0 client secret | Required |
-| `WEBHOOK_API_KEY` | Webhook authentication | Required |
-| `LOG_LEVEL` | Logging level | `info` |
-
-## Architecture
-
-### Directory Structure
-```
-src/
-├── routes/          # API route handlers
-├── services/        # Business logic
-├── middleware/      # Express middleware
-├── utils/           # Utility functions
-└── server.ts        # Main server file
-```
-
-### Key Components
-
-- **EventService**: Event processing and storage
-- **WebSocketService**: Real-time data broadcasting
-- **AuthMiddleware**: JWT authentication
-- **ValidationMiddleware**: Request validation
-- **ErrorMiddleware**: Error handling
-
-## Monitoring
-
-### Health Checks
-- Service health: `GET /health`
-- Database connectivity: Built into health check
-- WebSocket status: Available via WebSocket connection
-
-### Logging
-- Structured logging with different levels
-- Request/response logging
-- Error tracking and reporting
-
-## Performance
-
-### Optimizations
-- Database connection pooling
-- WebSocket connection management
-- Request validation and sanitization
-- Pre-segmented data for instant filtering
-
-### Scaling
-- Horizontal scaling support
-- Database read replicas
-- WebSocket clustering with Redis (planned)
+| `WEBHOOK_API_KEY` | Webhook API key | Required |
+| `JWT_ISSUER_DOMAIN` | JWT issuer domain | Required |
+| `JWT_AUDIENCE` | JWT audience | Required |
