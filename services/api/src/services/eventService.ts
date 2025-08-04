@@ -34,12 +34,66 @@ export class EventService {
   }
 
   /**
-   * Retrieves all stored events
+   * Retrieves all stored events (for admin use)
    * @returns Array of events with received timestamps
    */
   public static async getAllEvents(): Promise<EventWithReceivedAt[]> {
     try {
       const events = await prisma.event.findMany({
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
+        eventType: event.eventType as EventType,
+        userId: event.userId,
+        timestamp: event.timestamp.toISOString(),
+        metadata: event.metadata as EventMetadata | undefined || undefined,
+        receivedAt: event.createdAt
+      }));
+    } catch (error) {
+      console.error('Error retrieving events from database:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves events for a specific user
+   * @param userId - The user ID to filter events by
+   * @returns Array of events with received timestamps
+   */
+  public static async getEventsByUserId(userId: string): Promise<EventWithReceivedAt[]> {
+    try {
+      const events = await prisma.event.findMany({
+        where: { userId },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return events.map((event: { eventType: string; userId: string; timestamp: Date; metadata: unknown; createdAt: Date }) => ({
+        eventType: event.eventType as EventType,
+        userId: event.userId,
+        timestamp: event.timestamp.toISOString(),
+        metadata: event.metadata as EventMetadata | undefined || undefined,
+        receivedAt: event.createdAt
+      }));
+    } catch (error) {
+      console.error('Error retrieving events from database:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves events for a specific organization
+   * @param organizationId - The organization ID to filter events by
+   * @returns Array of events with received timestamps
+   */
+  public static async getEventsByOrganizationId(organizationId: string): Promise<EventWithReceivedAt[]> {
+    try {
+      const events = await prisma.event.findMany({
+        where: { organizationId },
         orderBy: {
           createdAt: 'desc'
         }
@@ -72,13 +126,67 @@ export class EventService {
   }
 
   /**
-   * Calculates and returns counts of events by eventType
+   * Calculates and returns counts of events by eventType (for admin use)
    * @returns Object with event type counts
    */
   public static async getEventStatistics(): Promise<EventStatistics> {
     try {
       const stats = await prisma.event.groupBy({
         by: ['eventType'],
+        _count: {
+          eventType: true
+        }
+      });
+
+      const statistics: EventStatistics = {};
+      stats.forEach((stat: { eventType: string; _count: { eventType: number } }) => {
+        statistics[stat.eventType] = stat._count.eventType;
+      });
+
+      return statistics;
+    } catch (error) {
+      console.error('Error getting event statistics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculates and returns counts of events by eventType for a specific user
+   * @param userId - The user ID to filter events by
+   * @returns Object with event type counts
+   */
+  public static async getEventStatisticsByUserId(userId: string): Promise<EventStatistics> {
+    try {
+      const stats = await prisma.event.groupBy({
+        by: ['eventType'],
+        where: { userId },
+        _count: {
+          eventType: true
+        }
+      });
+
+      const statistics: EventStatistics = {};
+      stats.forEach((stat: { eventType: string; _count: { eventType: number } }) => {
+        statistics[stat.eventType] = stat._count.eventType;
+      });
+
+      return statistics;
+    } catch (error) {
+      console.error('Error getting event statistics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculates and returns counts of events by eventType for a specific organization
+   * @param organizationId - The organization ID to filter events by
+   * @returns Object with event type counts
+   */
+  public static async getEventStatisticsByOrganizationId(organizationId: string): Promise<EventStatistics> {
+    try {
+      const stats = await prisma.event.groupBy({
+        by: ['eventType'],
+        where: { organizationId },
         _count: {
           eventType: true
         }

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { EventService } from '../services/eventService';
+import { OrganizationService } from '../services/organizationService';
 import { ApiResponse, EventStatistics } from '../types';
 import { authenticateToken } from '../middleware/auth';
 
@@ -13,8 +14,35 @@ const router = Router();
  */
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { filter } = req.query;
-    let events = await EventService.getAllEvents();
+    const { filter, organizationId } = req.query;
+    const userId = (req as any).user.sub; // From JWT token
+    
+    // Determine which events to fetch based on user role and organization filter
+    let events;
+    if ((req as any).user.role === 'admin') {
+      // Admin can see all events or filter by organization
+      if (organizationId && typeof organizationId === 'string') {
+        events = await EventService.getEventsByOrganizationId(organizationId);
+      } else {
+        events = await EventService.getAllEvents();
+      }
+    } else {
+      // Regular users can only see their own events or their organization's events
+      if (organizationId && typeof organizationId === 'string') {
+        // Verify user owns the organization
+        const ownsOrg = await OrganizationService.userOwnsOrganization(userId, organizationId);
+        if (!ownsOrg) {
+          const response: ApiResponse = {
+            success: false,
+            message: 'Access denied to this organization'
+          };
+          return res.status(403).json(response);
+        }
+        events = await EventService.getEventsByOrganizationId(organizationId);
+      } else {
+        events = await EventService.getEventsByUserId(userId);
+      }
+    }
 
     // Apply time-based filtering (default to hour if no filter specified)
     const filterValue = filter && typeof filter === 'string' ? filter : 'hour';
@@ -50,7 +78,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       }
     };
 
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
     console.error('Error retrieving events:', error);
 
@@ -59,7 +87,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       message: 'Internal server error'
     };
 
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 
@@ -71,8 +99,35 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
  */
 router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { filter } = req.query;
-    let events = await EventService.getAllEvents();
+    const { filter, organizationId } = req.query;
+    const userId = (req as any).user.sub; // From JWT token
+    
+    // Determine which events to fetch based on user role and organization filter
+    let events;
+    if ((req as any).user.role === 'admin') {
+      // Admin can see all events or filter by organization
+      if (organizationId && typeof organizationId === 'string') {
+        events = await EventService.getEventsByOrganizationId(organizationId);
+      } else {
+        events = await EventService.getAllEvents();
+      }
+    } else {
+      // Regular users can only see their own events or their organization's events
+      if (organizationId && typeof organizationId === 'string') {
+        // Verify user owns the organization
+        const ownsOrg = await OrganizationService.userOwnsOrganization(userId, organizationId);
+        if (!ownsOrg) {
+          const response: ApiResponse = {
+            success: false,
+            message: 'Access denied to this organization'
+          };
+          return res.status(403).json(response);
+        }
+        events = await EventService.getEventsByOrganizationId(organizationId);
+      } else {
+        events = await EventService.getEventsByUserId(userId);
+      }
+    }
 
     // Apply time-based filtering (default to hour if no filter specified)
     const filterValue = filter && typeof filter === 'string' ? filter : 'hour';
@@ -115,7 +170,7 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
       }
     };
 
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
     console.error('Error retrieving event statistics:', error);
 
@@ -124,7 +179,7 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
       message: 'Internal server error'
     };
 
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 

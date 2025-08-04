@@ -44,6 +44,9 @@ router.get('/', (_req, res) => {
                 'POST /webhook': 'Receive webhook events',
                 'GET /events': 'Retrieve all events',
                 'GET /events/stats': 'Get event statistics',
+                'GET /users': 'User management (admin)',
+                'GET /organizations': 'Organization management',
+                'GET /organizations/my': 'Get user organizations',
                 'GET /health': 'Health check',
                 'GET /': 'API information'
             }

@@ -17,11 +17,11 @@ export const eventSchema: Joi.ObjectSchema<Event> = Joi.object({
     }),
   
   userId: Joi.string()
-    .pattern(/^\d+$/)
+    .uuid()
     .required()
     .messages({
       'any.required': 'userId is required',
-      'string.pattern.base': 'userId must contain only numeric digits'
+      'string.guid': 'userId must be a valid UUID'
     }),
   
   timestamp: Joi.string()

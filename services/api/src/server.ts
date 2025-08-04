@@ -6,6 +6,8 @@ import { createServer } from 'http';
 import webhookRoutes from './routes/webhook';
 import eventsRoutes from './routes/events';
 import exportRoutes from './routes/export';
+import usersRoutes from './routes/users';
+import organizationsRoutes from './routes/organizations';
 import indexRoutes from './routes/index';
 import { errorHandler, notFoundHandler } from './middleware/errorHandling';
 import { requestLogger } from './middleware/logging';
@@ -44,6 +46,8 @@ app.use(requestLogger);
 app.use('/webhook', webhookRoutes);
 app.use('/events', eventsRoutes);
 app.use('/export', exportRoutes);
+app.use('/users', usersRoutes);
+app.use('/organizations', organizationsRoutes);
 app.use('/', indexRoutes);
 
 // Error handling middleware
@@ -65,6 +69,9 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`  GET  http://localhost:${PORT}/events?filter=hour|day|week`);
   console.log(`  GET  http://localhost:${PORT}/events/stats`);
   console.log(`  GET  http://localhost:${PORT}/events/stats?filter=hour|day|week`);
+  console.log(`  GET  http://localhost:${PORT}/users`);
+  console.log(`  GET  http://localhost:${PORT}/organizations`);
+  console.log(`  GET  http://localhost:${PORT}/organizations/my`);
   console.log(`  GET  http://localhost:${PORT}/health`);
   console.log(`  GET  http://localhost:${PORT}/`);
   console.log('---');

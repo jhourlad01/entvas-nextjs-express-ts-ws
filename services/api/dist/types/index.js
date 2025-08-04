@@ -19,4 +19,5 @@ __exportStar(require("./events"), exports);
 __exportStar(require("./api"), exports);
 __exportStar(require("./validation"), exports);
 __exportStar(require("./middleware"), exports);
+__exportStar(require("./users"), exports);
 //# sourceMappingURL=index.js.map

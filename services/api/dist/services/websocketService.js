@@ -38,7 +38,7 @@ class WebSocketService {
             const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
             const recentEvents = allEvents.filter(event => new Date(event.receivedAt) >= oneMinuteAgo);
             // Calculate top 5 event types for each time range
-            const topEventTypes = {
+            const segmentedTopEventTypes = {
                 hour: this.calculateTopEventTypes(allEvents, now, 'hour'),
                 day: this.calculateTopEventTypes(allEvents, now, 'day'),
                 week: this.calculateTopEventTypes(allEvents, now, 'week')
@@ -52,8 +52,9 @@ class WebSocketService {
             const stats = {
                 totalEvents,
                 eventsThisMinute: recentEvents.length,
-                topEventTypes,
+                topEventTypes: [], // Keep for backward compatibility
                 segmentedData,
+                segmentedTopEventTypes,
             };
             const message = JSON.stringify({ stats });
             console.log(`[${new Date().toISOString()}] Sending initial stats to client ${client.id}:`, stats);

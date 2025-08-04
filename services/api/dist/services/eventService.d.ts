@@ -12,20 +12,44 @@ export declare class EventService {
      */
     static addEvent(event: Event, _receivedAt: Date): Promise<void>;
     /**
-     * Retrieves all stored events
+     * Retrieves all stored events (for admin use)
      * @returns Array of events with received timestamps
      */
     static getAllEvents(): Promise<EventWithReceivedAt[]>;
+    /**
+     * Retrieves events for a specific user
+     * @param userId - The user ID to filter events by
+     * @returns Array of events with received timestamps
+     */
+    static getEventsByUserId(userId: string): Promise<EventWithReceivedAt[]>;
+    /**
+     * Retrieves events for a specific organization
+     * @param organizationId - The organization ID to filter events by
+     * @returns Array of events with received timestamps
+     */
+    static getEventsByOrganizationId(organizationId: string): Promise<EventWithReceivedAt[]>;
     /**
      * Returns the total count of valid events
      * @returns Number of valid events
      */
     static getEventCount(): Promise<number>;
     /**
-     * Calculates and returns counts of events by eventType
+     * Calculates and returns counts of events by eventType (for admin use)
      * @returns Object with event type counts
      */
     static getEventStatistics(): Promise<EventStatistics>;
+    /**
+     * Calculates and returns counts of events by eventType for a specific user
+     * @param userId - The user ID to filter events by
+     * @returns Object with event type counts
+     */
+    static getEventStatisticsByUserId(userId: string): Promise<EventStatistics>;
+    /**
+     * Calculates and returns counts of events by eventType for a specific organization
+     * @param organizationId - The organization ID to filter events by
+     * @returns Object with event type counts
+     */
+    static getEventStatisticsByOrganizationId(organizationId: string): Promise<EventStatistics>;
     /**
      * Prints comprehensive logs for successfully received and validated events
      * @param event - The event data
