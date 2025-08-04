@@ -119,7 +119,7 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
 router.post('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { name, description } = req.body;
-    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
+    const auth0Sub = (req as AuthenticatedRequest).user.sub; // From JWT token
 
     if (!name) {
       const response: ApiResponse = {
@@ -129,7 +129,17 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    const organization = await OrganizationService.createOrganization(userId, { name, description });
+    // Get user by Auth0 sub to get the actual user ID
+    const user = await UserService.getUserByAuth0Sub(auth0Sub);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'User not found'
+      };
+      return res.status(404).json(response);
+    }
+
+    const organization = await OrganizationService.createOrganization(user.id, { name, description });
 
     const response: ApiResponse = {
       success: true,
@@ -156,7 +166,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
-    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
+    const auth0Sub = (req as AuthenticatedRequest).user.sub; // From JWT token
 
     if (!id) {
       const response: ApiResponse = {
@@ -166,7 +176,17 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    const organization = await OrganizationService.updateOrganization(id, userId, { name, description });
+    // Get user by Auth0 sub to get the actual user ID
+    const user = await UserService.getUserByAuth0Sub(auth0Sub);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'User not found'
+      };
+      return res.status(404).json(response);
+    }
+
+    const organization = await OrganizationService.updateOrganization(id, user.id, { name, description });
 
     if (!organization) {
       const response: ApiResponse = {
@@ -200,7 +220,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
 router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
+    const auth0Sub = (req as AuthenticatedRequest).user.sub; // From JWT token
     
     if (!id) {
       const response: ApiResponse = {
@@ -209,8 +229,18 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
       };
       return res.status(400).json(response);
     }
+
+    // Get user by Auth0 sub to get the actual user ID
+    const user = await UserService.getUserByAuth0Sub(auth0Sub);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'User not found'
+      };
+      return res.status(404).json(response);
+    }
     
-    const success = await OrganizationService.deleteOrganization(id, userId);
+    const success = await OrganizationService.deleteOrganization(id, user.id);
 
     if (!success) {
       const response: ApiResponse = {

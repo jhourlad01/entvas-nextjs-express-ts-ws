@@ -17,7 +17,8 @@ import {
   Login, 
   Logout, 
   Person,
-  KeyboardArrowDown
+  KeyboardArrowDown,
+  Business
 } from '@mui/icons-material';
 import { useUser } from '@/contexts/UserContext';
 import Image from 'next/image';
@@ -43,6 +44,11 @@ export default function Header() {
     handleMenuClose();
   };
 
+  const handleOrganizations = () => {
+    window.location.href = '/organizations';
+    handleMenuClose();
+  };
+
   const open = Boolean(anchorEl);
 
   return (
@@ -50,7 +56,18 @@ export default function Header() {
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
           <Analytics sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1, 
+              cursor: 'pointer',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }}
+            onClick={() => window.location.href = '/'}
+          >
             Events Analytics Dashboard
           </Typography>
         </Box>
@@ -130,6 +147,10 @@ export default function Header() {
                   </Box>
                 </MenuItem>
                 <Divider />
+                <MenuItem onClick={handleOrganizations} sx={{ py: 1.5 }}>
+                  <Business sx={{ mr: 2, fontSize: 20 }} />
+                  Organizations
+                </MenuItem>
                 <MenuItem onClick={handleLogout} sx={{ py: 1.5 }}>
                   <Logout sx={{ mr: 2, fontSize: 20 }} />
                   Logout

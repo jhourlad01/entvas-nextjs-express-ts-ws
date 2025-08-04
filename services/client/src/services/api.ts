@@ -1,6 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { useMemo } from 'react';
 
+
 export const useApi = () => {
   const { getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
 
@@ -13,9 +14,12 @@ export const useApi = () => {
         }
 
         const token = await getAccessTokenSilently();
+        console.log('Token obtained:', token ? 'Token exists' : 'No token');
         
         // Use the API server URL (port 8000) instead of Next.js port
         const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+        console.log('API URL:', apiUrl);
+        console.log('Making request to:', `${apiUrl}${endpoint}`);
         
         const response = await fetch(`${apiUrl}${endpoint}`, {
           ...options,

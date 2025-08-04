@@ -15,7 +15,8 @@ import {
 import { Business } from '@mui/icons-material';
 import { useApi } from '@/services/api';
 
-export interface Organization {
+
+interface Organization {
   id: string;
   name: string;
   description?: string;
