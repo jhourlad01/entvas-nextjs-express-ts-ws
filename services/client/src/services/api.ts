@@ -40,10 +40,53 @@ export const useApi = () => {
 
   // Memoize the API methods to prevent unnecessary re-renders
   const api = useMemo(() => ({
-    getEvents: (filter?: string) => apiCall(`/events${filter ? `?filter=${filter}` : ''}`),
-    getStats: (filter?: string) => apiCall(`/events/stats${filter ? `?filter=${filter}` : ''}`),
+    // Event endpoints
+    getEvents: (filter?: string, organizationId?: string) => {
+      const params = new URLSearchParams();
+      if (filter) params.append('filter', filter);
+      if (organizationId) params.append('organizationId', organizationId);
+      return apiCall(`/events${params.toString() ? `?${params.toString()}` : ''}`);
+    },
+    getStats: (filter?: string, organizationId?: string) => {
+      const params = new URLSearchParams();
+      if (filter) params.append('filter', filter);
+      if (organizationId) params.append('organizationId', organizationId);
+      return apiCall(`/events/stats${params.toString() ? `?${params.toString()}` : ''}`);
+    },
     exportCsv: (filter?: string) => apiCall(`/export/csv${filter ? `?filter=${filter}` : ''}`),
     exportJson: (filter?: string) => apiCall(`/export/json${filter ? `?filter=${filter}` : ''}`),
+    
+    // User endpoints
+    getUser: (id: string) => apiCall(`/users/${id}`),
+    createUser: (userData: { email: string; name?: string | null }) => 
+      apiCall('/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      }),
+    updateUser: (id: string, userData: { email?: string; name?: string | null }) =>
+      apiCall(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      }),
+    
+    // Organization endpoints
+    getOrganizations: () => apiCall('/organizations'),
+    getMyOrganizations: () => apiCall('/organizations/my'),
+    getOrganization: (id: string) => apiCall(`/organizations/${id}`),
+    createOrganization: (orgData: { name: string; description?: string }) =>
+      apiCall('/organizations', {
+        method: 'POST',
+        body: JSON.stringify(orgData),
+      }),
+    updateOrganization: (id: string, orgData: { name?: string; description?: string }) =>
+      apiCall(`/organizations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(orgData),
+      }),
+    deleteOrganization: (id: string) =>
+      apiCall(`/organizations/${id}`, {
+        method: 'DELETE',
+      }),
   }), [apiCall]);
 
   return { api, isAuthenticated, loginWithRedirect };
