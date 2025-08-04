@@ -79,28 +79,15 @@ export default function Home() {
   
   // Function to get top event types for a time range
   const getTopEventTypes = useCallback((timeRange: TimeRange) => {
-    // Try selected time range first
-    let data = websocketTopEventTypes[timeRange] || [];
-    let actualTimeRange = timeRange;
-    
-    // If empty, fall back to other time ranges in order: hour -> day -> week
-    if (data.length === 0) {
-      const fallbackOrder = ['hour', 'day', 'week'].filter(range => range !== timeRange);
-      for (const fallbackRange of fallbackOrder) {
-        const fallbackData = websocketTopEventTypes[fallbackRange as TimeRange] || [];
-        if (fallbackData.length > 0) {
-          data = fallbackData;
-          actualTimeRange = fallbackRange as TimeRange;
-          break;
-        }
-      }
-    }
-    
+    // Only use the selected time range, no fallback
+    const data = websocketTopEventTypes[timeRange] || [];
+    const actualTimeRange = timeRange;
+
     // Debug logging
     console.log('getTopEventTypes called with timeRange:', timeRange);
     console.log('websocketTopEventTypes:', websocketTopEventTypes);
     console.log('Returning data:', data, 'actualTimeRange:', actualTimeRange);
-    
+
     return { data, actualTimeRange };
   }, [websocketTopEventTypes]);
   
