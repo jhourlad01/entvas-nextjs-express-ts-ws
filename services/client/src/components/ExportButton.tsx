@@ -6,9 +6,10 @@ import { Download, ExpandMore } from '@mui/icons-material';
 
 interface ExportButtonProps {
   filter: string;
+  organizationId?: string | null;
 }
 
-export function ExportButton({ filter }: ExportButtonProps) {
+export function ExportButton({ filter, organizationId }: ExportButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -21,7 +22,12 @@ export function ExportButton({ filter }: ExportButtonProps) {
   };
 
   const handleExport = (format: 'csv' | 'json') => {
-    const url = `/export/${format}?filter=${filter}`;
+    const params = new URLSearchParams();
+    params.append('filter', filter);
+    if (organizationId) {
+      params.append('organizationId', organizationId);
+    }
+    const url = `/export/${format}?${params.toString()}`;
     window.open(url, '_blank');
     handleClose();
   };

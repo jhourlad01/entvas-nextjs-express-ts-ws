@@ -6,7 +6,7 @@ import { Analytics, Timeline, Login, Lock } from '@mui/icons-material';
 import StatsCard from '@/components/dashboard/StatsCard';
 import EventsPerMinuteChart from '@/components/dashboard/EventsPerMinuteChart';
 import TopEventTypes from '@/components/dashboard/TopEventTypes';
-import TimeFilter, { TimeRange } from '@/components/dashboard/TimeFilter';
+import Filters, { TimeRange } from '@/components/dashboard/Filters';
 import { ExportButton } from '@/components/ExportButton';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useApi } from '@/services/api';
@@ -20,6 +20,7 @@ const MemoizedTopEventTypes = memo(TopEventTypes);
 export default function Home() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('hour');
   const [actualDisplayTimeRange, setActualDisplayTimeRange] = useState<TimeRange>('hour');
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   const [chartData, setChartData] = useState<Array<{timestamp: string; count: number}>>([]);
   const [topEventTypes, setTopEventTypes] = useState<Array<{type: string; count: number; percentage: number}>>([]);
   const [isClient, setIsClient] = useState(false);
@@ -126,8 +127,8 @@ export default function Home() {
       // Authentication is handled by the API service
       
       const [eventsResponse, statsResponse] = await Promise.all([
-        memoizedApi.getEvents(timeRange),
-        memoizedApi.getStats(timeRange)
+        memoizedApi.getEvents(timeRange, selectedOrganizationId || undefined),
+        memoizedApi.getStats(timeRange, selectedOrganizationId || undefined)
       ]);
 
       console.log('API Response - Events:', eventsResponse, 'Stats:', statsResponse);
@@ -221,7 +222,7 @@ export default function Home() {
       setLoading(false);
       setTimeRangeLoading(false);
     }
-  }, [memoizedApi, lastLoadTime]);
+  }, [memoizedApi, lastLoadTime, selectedOrganizationId]);
 
   // Initialize data on client side to prevent hydration errors
   useEffect(() => {
@@ -321,6 +322,11 @@ export default function Home() {
     setSelectedTimeRange(newRange);
   };
 
+  // Handle organization changes
+  const handleOrganizationChange = (organizationId: string | null) => {
+    setSelectedOrganizationId(organizationId);
+  };
+
   // Handle login
   const handleLogin = () => {
     loginWithRedirect();
@@ -412,7 +418,7 @@ export default function Home() {
             color={connected ? 'success' : 'error'}
             size="small"
           />
-          <ExportButton filter={selectedTimeRange} />
+          <ExportButton filter={selectedTimeRange} organizationId={selectedOrganizationId} />
         </Stack>
       </Box>
 
@@ -450,11 +456,14 @@ export default function Home() {
 
       {/* Charts and Analytics */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* Time Filter - positioned before Events per Minute chart */}
+        {/* Filters - positioned before Events per Minute chart */}
         <Box sx={{ width: '100%' }}>
-          <TimeFilter
-            selectedRange={actualDisplayTimeRange}
-            onRangeChange={handleTimeRangeChange}
+          <Filters
+            selectedTimeRange={actualDisplayTimeRange}
+            onTimeRangeChange={handleTimeRangeChange}
+            selectedOrganizationId={selectedOrganizationId}
+            onOrganizationChange={handleOrganizationChange}
+            title="Filters"
           />
         </Box>
         

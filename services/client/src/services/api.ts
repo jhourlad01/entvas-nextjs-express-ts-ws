@@ -58,7 +58,8 @@ export const useApi = () => {
     
     // User endpoints
     getUser: (id: string) => apiCall(`/users/${id}`),
-    createUser: (userData: { email: string; name?: string | null }) => 
+    getUserByAuth0Sub: (sub: string) => apiCall(`/users/auth0/${sub}`),
+    createUser: (userData: { email: string; name?: string | null; auth0Sub?: string }) => 
       apiCall('/users', {
         method: 'POST',
         body: JSON.stringify(userData),

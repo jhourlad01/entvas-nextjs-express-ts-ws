@@ -40,8 +40,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       try {
         setIsLoading(true);
         
-        // Try to get user data from our API
-        const response = await api.getUser(auth0User.sub);
+        // Try to get user data from our API using Auth0 sub ID
+        const response = await api.getUserByAuth0Sub(auth0User.sub);
         
         if (response.success && response.data) {
           setUser(response.data);
@@ -50,25 +50,58 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           const createResponse = await api.createUser({
             email: auth0User.email || '',
             name: auth0User.name || null,
-            // Note: We don't have password from Auth0, so we'll need to handle this
-            // For now, we'll create a placeholder user
           });
           
           if (createResponse.success && createResponse.data) {
             setUser(createResponse.data);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching user data:', error);
-        // If API call fails, we'll still have Auth0 user data
-        // Create a minimal user object from Auth0 data
-        setUser({
-          id: auth0User.sub,
-          email: auth0User.email || '',
-          name: auth0User.name || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        
+        // Check if it's a 404 error (user doesn't exist)
+        if (error.message && error.message.includes('404')) {
+          try {
+            // Create the user since they don't exist
+            const createResponse = await api.createUser({
+              email: auth0User.email || '',
+              name: auth0User.name || null,
+              auth0Sub: auth0User.sub,
+            });
+            
+            if (createResponse.success && createResponse.data) {
+              setUser(createResponse.data);
+            } else {
+              // Fallback to Auth0 user data
+              setUser({
+                id: auth0User.sub,
+                email: auth0User.email || '',
+                name: auth0User.name || null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+            }
+          } catch (createError) {
+            console.error('Error creating user:', createError);
+            // Fallback to Auth0 user data
+            setUser({
+              id: auth0User.sub,
+              email: auth0User.email || '',
+              name: auth0User.name || null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+        } else {
+          // For other errors, use Auth0 user data as fallback
+          setUser({
+            id: auth0User.sub,
+            email: auth0User.email || '',
+            name: auth0User.name || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
       } finally {
         setIsLoading(false);
       }
