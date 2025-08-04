@@ -52,7 +52,7 @@ class WebSocketService {
       );
       
       // Calculate top 5 event types for each time range
-      const topEventTypes = {
+      const segmentedTopEventTypes = {
         hour: this.calculateTopEventTypes(allEvents, now, 'hour'),
         day: this.calculateTopEventTypes(allEvents, now, 'day'),
         week: this.calculateTopEventTypes(allEvents, now, 'week')
@@ -68,8 +68,9 @@ class WebSocketService {
       const stats = {
         totalEvents,
         eventsThisMinute: recentEvents.length,
-        topEventTypes,
+        topEventTypes: [], // Keep for backward compatibility
         segmentedData,
+        segmentedTopEventTypes,
       };
 
       const message = JSON.stringify({ stats });
