@@ -31,6 +31,47 @@ router.get('/', authenticateToken, requireRole('admin'), async (_req: Request, r
 });
 
 /**
+ * GET /users/auth0/:sub - Get user by Auth0 sub ID
+ */
+router.get('/auth0/:sub', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { sub } = req.params;
+    if (!sub) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Auth0 sub ID is required'
+      };
+      return res.status(400).json(response);
+    }
+    const user = await UserService.getUserByAuth0Sub(sub);
+
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'User not found'
+      };
+      return res.status(404).json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: user
+    };
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error('Error retrieving user by Auth0 sub:', error);
+
+    const response: ApiResponse = {
+      success: false,
+      message: 'Internal server error'
+    };
+
+    return res.status(500).json(response);
+  }
+});
+
+/**
  * GET /users/:id - Get user by ID
  */
 router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
@@ -76,12 +117,12 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, auth0Sub } = req.body;
 
-    if (!email || !password) {
+    if (!email) {
       const response: ApiResponse = {
         success: false,
-        message: 'Email and password are required'
+        message: 'Email is required'
       };
       return res.status(400).json(response);
     }
@@ -96,7 +137,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(409).json(response);
     }
 
-    const user = await UserService.createUser({ email, password, name });
+    const user = await UserService.createUser({ email, password, name, auth0Sub });
 
     const response: ApiResponse = {
       success: true,

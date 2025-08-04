@@ -3,14 +3,16 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  auth0Sub?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface CreateUserRequest {
   email: string;
-  password: string;
+  password?: string; // Optional for Auth0 users
   name?: string;
+  auth0Sub?: string; // Auth0 sub ID
 }
 
 export interface UpdateUserRequest {

@@ -7,20 +7,33 @@ export class UserService {
    * Create a new user
    */
   public static async createUser(userData: CreateUserRequest): Promise<User> {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const userDataForPrisma: any = {
+      email: userData.email,
+    };
+
+    if (userData.name) {
+      userDataForPrisma.name = userData.name;
+    }
+
+    if (userData.auth0Sub) {
+      userDataForPrisma.auth0Sub = userData.auth0Sub;
+    }
+
+    // Only hash password if provided (for non-Auth0 users)
+    if (userData.password) {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      userDataForPrisma.passwordHash = hashedPassword;
+    }
     
     const user = await prisma.user.create({
-      data: {
-        email: userData.email,
-        passwordHash: hashedPassword,
-        ...(userData.name && { name: userData.name })
-      }
+      data: userDataForPrisma
     });
 
     return {
       id: user.id,
       email: user.email,
       name: user.name,
+      auth0Sub: user.auth0Sub,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -40,6 +53,7 @@ export class UserService {
       id: user.id,
       email: user.email,
       name: user.name,
+      auth0Sub: user.auth0Sub,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -59,6 +73,27 @@ export class UserService {
       id: user.id,
       email: user.email,
       name: user.name,
+      auth0Sub: user.auth0Sub,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+  }
+
+  /**
+   * Get user by Auth0 sub ID
+   */
+  public static async getUserByAuth0Sub(auth0Sub: string): Promise<User | null> {
+    const user = await prisma.user.findUnique({
+      where: { auth0Sub }
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      auth0Sub: user.auth0Sub,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -77,6 +112,7 @@ export class UserService {
       id: user.id,
       email: user.email,
       name: user.name,
+      auth0Sub: user.auth0Sub,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -109,6 +145,7 @@ export class UserService {
       id: user.id,
       email: user.email,
       name: user.name,
+      auth0Sub: user.auth0Sub,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     }));
@@ -123,7 +160,7 @@ export class UserService {
       select: { passwordHash: true }
     });
 
-    if (!user) return false;
+    if (!user || !user.passwordHash) return false;
 
     return bcrypt.compare(password, user.passwordHash);
   }
