@@ -15,6 +15,14 @@ interface StatsData {
     day: Array<{type: string; count: number; percentage: number}>;
     week: Array<{type: string; count: number; percentage: number}>;
   };
+  rawEvents?: Array<{
+    eventType: string;
+    userId: string;
+    timestamp: string;
+    metadata?: Record<string, unknown>;
+    receivedAt: string;
+    organizationId?: string | null;
+  }>;
 }
 
 export function useWebSocket() {

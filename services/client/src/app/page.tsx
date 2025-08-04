@@ -48,7 +48,7 @@ export default function Home() {
     timestamp: string;
     metadata?: Record<string, unknown>;
     receivedAt: string;
-    organizationId?: string;
+    organizationId?: string | null;
   }>>([]);
   
   // Update timestamp display every second
@@ -147,6 +147,41 @@ export default function Home() {
       count
     })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, []);
+
+  // Calculate global maximum Y-axis value across all organizations and time ranges
+  const calculateGlobalMaxY = useCallback(() => {
+    if (!rawEvents.length) return 10; // Default max if no data
+    
+    const now = new Date();
+    let globalMax = 0;
+    
+    // Get all unique organization IDs (including null for unassigned events)
+    const organizationIds = [...new Set(rawEvents.map(event => event.organizationId))];
+    
+    // Calculate max for each organization across all time ranges
+    organizationIds.forEach(orgId => {
+      const orgEvents = orgId ? rawEvents.filter(event => event.organizationId === orgId) : rawEvents;
+      
+      // Calculate for hour view
+      const hourData = calculateHourData(orgEvents, now);
+      const hourMax = Math.max(...hourData.map(d => d.count), 0);
+      
+      // Calculate for day view
+      const dayData = calculateDayData(orgEvents, now);
+      const dayMax = Math.max(...dayData.map(d => d.count), 0);
+      
+      // Calculate for week view
+      const weekData = calculateWeekData(orgEvents, now);
+      const weekMax = Math.max(...weekData.map(d => d.count), 0);
+      
+      // Update global max
+      globalMax = Math.max(globalMax, hourMax, dayMax, weekMax);
+    });
+    
+    // Add some padding (20% of max value, minimum 1)
+    const padding = Math.max(1, Math.ceil(globalMax * 0.2));
+    return globalMax + padding;
+  }, [rawEvents, calculateHourData, calculateDayData, calculateWeekData]);
 
   // Function to get pre-segmented data for a time range
   const getSegmentedData = useCallback((timeRange: TimeRange) => {
@@ -410,6 +445,9 @@ export default function Home() {
     }
   }, [selectedTimeRange, isClient, isAuthenticated, authLoading, dataInitialized, getSegmentedData, getTopEventTypes]);
 
+  // Calculate global maximum Y-axis value for consistent scaling
+  const globalMaxY = calculateGlobalMaxY();
+
   // Store WebSocket segmented data
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && stats.segmentedData) {
@@ -645,7 +683,9 @@ export default function Home() {
                 </Box>
               )}
               <MemoizedEventsPerMinuteChart 
+                key={`${selectedOrganizationId}-${actualDisplayTimeRange}-${chartData.length}`}
                 data={chartData}
+                maxY={globalMaxY}
                               title={(() => {
                 switch (actualDisplayTimeRange) {
                   case 'hour':
@@ -683,6 +723,7 @@ export default function Home() {
                 </Box>
               )}
               <MemoizedTopEventTypes 
+                key={`${selectedOrganizationId}-${actualDisplayTimeRange}-${topEventTypes.length}`}
                 data={topEventTypes} 
                 title={`Top 5 Event Types (${actualDisplayTimeRange === 'hour' ? 'Last Hour' : actualDisplayTimeRange === 'day' ? 'Today' : 'This Week'})`}
               />

@@ -36,11 +36,13 @@ interface EventData {
 interface EventsPerMinuteChartProps {
   data: EventData[];
   title?: string;
+  maxY?: number;
 }
 
 export default function EventsPerMinuteChart({ 
   data, 
-  title = "Events per Minute" 
+  title = "Events per Minute",
+  maxY
 }: EventsPerMinuteChartProps) {
 
   
@@ -129,6 +131,7 @@ export default function EventsPerMinuteChart({
       },
       y: {
         beginAtZero: true,
+        max: maxY,
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
         },
