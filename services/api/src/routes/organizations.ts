@@ -1,7 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { OrganizationService } from '../services/organizationService';
 import { ApiResponse } from '../types';
 import { authenticateToken, requireRole } from '../middleware/auth';
+import { AuthenticatedRequest } from '../types/auth';
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.get('/', authenticateToken, requireRole('admin'), async (_req: Request, r
  */
 router.get('/my', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
     const organizations = await OrganizationService.getOrganizationsByUserId(userId);
     
     const response: ApiResponse = {
@@ -103,7 +104,7 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
 router.post('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { name, description } = req.body;
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
 
     if (!name) {
       const response: ApiResponse = {
@@ -140,7 +141,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
 
     if (!id) {
       const response: ApiResponse = {
@@ -184,7 +185,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
 router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
     
     if (!id) {
       const response: ApiResponse = {

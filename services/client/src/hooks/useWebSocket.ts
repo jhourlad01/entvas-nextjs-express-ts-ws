@@ -70,7 +70,7 @@ export function useWebSocket() {
       setConnected(false);
       // Retry connection after configured interval
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('Attempting to reconnect...');
+
         connect();
       }, reconnectInterval);
     };

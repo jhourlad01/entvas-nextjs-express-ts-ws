@@ -7,7 +7,12 @@ export class UserService {
    * Create a new user
    */
   public static async createUser(userData: CreateUserRequest): Promise<User> {
-    const userDataForPrisma: any = {
+    const userDataForPrisma: {
+      email: string;
+      name?: string;
+      auth0Sub?: string;
+      passwordHash?: string;
+    } = {
       email: userData.email,
     };
 

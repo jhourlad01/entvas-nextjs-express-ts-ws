@@ -85,10 +85,7 @@ export default function Home() {
     const data = websocketTopEventTypes[timeRange] || [];
     const actualTimeRange = timeRange;
 
-    // Debug logging
-    console.log('getTopEventTypes called with timeRange:', timeRange);
-    console.log('websocketTopEventTypes:', websocketTopEventTypes);
-    console.log('Returning data:', data, 'actualTimeRange:', actualTimeRange);
+
 
     return { data, actualTimeRange };
   }, [websocketTopEventTypes]);
@@ -114,7 +111,6 @@ export default function Home() {
     
     // Prevent loading data more frequently than every 5 seconds
     if (timeSinceLastLoad < 5000) {
-      console.log('Skipping data load - too recent:', timeSinceLastLoad, 'ms ago');
       return;
     }
     
@@ -122,7 +118,7 @@ export default function Home() {
       setLoading(true);
       setError(null);
       setLastLoadTime(now);
-      console.log('Loading data for time range:', timeRange);
+
       
       // Authentication is handled by the API service
       
@@ -131,7 +127,7 @@ export default function Home() {
         memoizedApi.getStats(timeRange, selectedOrganizationId || undefined)
       ]);
 
-      console.log('API Response - Events:', eventsResponse, 'Stats:', statsResponse);
+
 
       // Check if responses have the expected structure
       if (!eventsResponse || !eventsResponse.data || !Array.isArray(eventsResponse.data.events)) {
@@ -192,9 +188,7 @@ export default function Home() {
         };
       });
 
-      console.log('Chart data array:', chartDataArray);
-      console.log('Chart data length:', chartDataArray.length);
-      console.log('Chart data has values:', chartDataArray.some(item => item.count > 0));
+
 
       // Convert stats to top event types format
       const totalEvents = statsResponse.data.totalEvents || 0;
@@ -232,7 +226,6 @@ export default function Home() {
   // Load data when authentication is confirmed and component is ready
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && !dataInitialized) {
-      console.log('Authentication confirmed, loading initial data');
       
       // Wait for WebSocket data to be available
       const hourData = getSegmentedData('hour');
@@ -245,7 +238,6 @@ export default function Home() {
         setDataInitialized(true);
       } else {
         // Wait for WebSocket data to arrive
-        console.log('Waiting for WebSocket data...');
       }
     }
   }, [isClient, isAuthenticated, authLoading, dataInitialized, getSegmentedData, getTopEventTypes]);
@@ -253,13 +245,9 @@ export default function Home() {
   // Handle time range changes with pre-segmented data
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && dataInitialized) {
-      console.log('Time range changed to:', selectedTimeRange);
-      
       // Get pre-segmented data for the selected time range
       const segmentedData = getSegmentedData(selectedTimeRange);
       const topEventTypesData = getTopEventTypes(selectedTimeRange);
-      console.log('Segmented data for', selectedTimeRange, ':', segmentedData);
-      console.log('Top event types for', selectedTimeRange, ':', topEventTypesData);
       
       // Always use WebSocket data - no API fallbacks
       setTimeRangeLoading(true);
@@ -276,18 +264,12 @@ export default function Home() {
   // Store WebSocket segmented data
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && stats.segmentedData) {
-      console.log('Received WebSocket segmented data:', stats.segmentedData);
-      console.log('Received WebSocket segmentedTopEventTypes:', stats.segmentedTopEventTypes);
-      
       // Store the segmented data regardless of values (structure is what matters)
       setWebsocketSegmentedData(stats.segmentedData);
       
       // Store segmented top event types if available
       if (stats.segmentedTopEventTypes) {
-        console.log('Setting websocketTopEventTypes:', stats.segmentedTopEventTypes);
         setWebsocketTopEventTypes(stats.segmentedTopEventTypes);
-      } else {
-        console.log('No segmentedTopEventTypes in WebSocket data');
       }
       
       // Mark the timestamp of this update
@@ -299,14 +281,12 @@ export default function Home() {
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && dataInitialized && stats.totalEvents > 0) {
       // WebSocket data is automatically updated, no need for API calls
-      console.log('WebSocket data updated, charts will refresh automatically');
     }
   }, [stats.totalEvents, isClient, isAuthenticated, authLoading, dataInitialized]);
   
   // Initialize data when WebSocket data becomes available
   useEffect(() => {
     if (isClient && isAuthenticated && !authLoading && !dataInitialized && websocketSegmentedData.hour.length > 0) {
-      console.log('WebSocket data available, initializing with hour view');
       const hourData = getSegmentedData('hour');
       const hourTopEventTypes = getTopEventTypes('hour');
       

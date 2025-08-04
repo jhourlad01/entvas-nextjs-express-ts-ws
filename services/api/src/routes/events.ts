@@ -1,8 +1,9 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { EventService } from '../services/eventService';
 import { OrganizationService } from '../services/organizationService';
 import { ApiResponse, EventStatistics } from '../types';
 import { authenticateToken } from '../middleware/auth';
+import { AuthenticatedRequest } from '../types/auth';
 
 const router = Router();
 
@@ -15,11 +16,11 @@ const router = Router();
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { filter, organizationId } = req.query;
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
     
     // Determine which events to fetch based on user role and organization filter
     let events;
-    if ((req as any).user.role === 'admin') {
+    if ((req as AuthenticatedRequest).user.role === 'admin') {
       // Admin can see all events or filter by organization
       if (organizationId && typeof organizationId === 'string') {
         events = await EventService.getEventsByOrganizationId(organizationId);
@@ -100,11 +101,11 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
 router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { filter, organizationId } = req.query;
-    const userId = (req as any).user.sub; // From JWT token
+    const userId = (req as AuthenticatedRequest).user.sub; // From JWT token
     
     // Determine which events to fetch based on user role and organization filter
     let events;
-    if ((req as any).user.role === 'admin') {
+    if ((req as AuthenticatedRequest).user.role === 'admin') {
       // Admin can see all events or filter by organization
       if (organizationId && typeof organizationId === 'string') {
         events = await EventService.getEventsByOrganizationId(organizationId);

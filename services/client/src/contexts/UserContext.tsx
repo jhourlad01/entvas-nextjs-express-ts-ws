@@ -56,7 +56,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setUser(createResponse.data);
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error fetching user data:', error);
         
         // Check if it's a 404 error (user doesn't exist)

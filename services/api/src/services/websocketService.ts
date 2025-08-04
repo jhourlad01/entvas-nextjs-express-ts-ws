@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { EventService } from './eventService';
+import { EventWithReceivedAt } from '../types/events';
 import { format, parseISO, startOfHour, startOfDay, subHours, subDays } from 'date-fns';
 
 interface ConnectedClient {
@@ -74,7 +75,7 @@ class WebSocketService {
       };
 
       const message = JSON.stringify({ stats });
-      console.log(`[${new Date().toISOString()}] Sending initial stats to client ${client.id}:`, stats);
+
       client.ws.send(message);
     } catch (error) {
       console.error('Error sending stats to client:', error);
@@ -120,7 +121,7 @@ class WebSocketService {
 
       const message = JSON.stringify({ stats });
       
-      console.log(`[${new Date().toISOString()}] Broadcasting stats to ${this.clients.length} clients:`, stats);
+
       
       this.clients.forEach(client => {
         if (client.ws.readyState === WebSocket.OPEN) {
@@ -128,7 +129,7 @@ class WebSocketService {
         }
       });
 
-      console.log(`[${new Date().toISOString()}] Broadcasted stats to ${this.clients.length} clients`);
+
     } catch (error) {
       console.error('Error broadcasting stats:', error);
     }
@@ -139,7 +140,7 @@ class WebSocketService {
   }
 
   // Helper method to calculate hour data (last 60 minutes)
-  private calculateHourData(allEvents: any[], now: Date): Array<{timestamp: string; count: number}> {
+  private calculateHourData(allEvents: EventWithReceivedAt[], now: Date): Array<{timestamp: string; count: number}> {
     const eventsPerMinute: Array<{timestamp: string; count: number}> = [];
     const roundedNow = new Date(now.getTime());
     roundedNow.setSeconds(0, 0);
@@ -163,7 +164,7 @@ class WebSocketService {
   }
 
   // Helper method to calculate day data (last 24 hours, grouped by hour)
-  private calculateDayData(allEvents: any[], now: Date): Array<{timestamp: string; count: number}> {
+  private calculateDayData(allEvents: EventWithReceivedAt[], now: Date): Array<{timestamp: string; count: number}> {
     const hourlyData = new Map<string, number>();
     const oneDayAgo = subHours(now, 24);
     
@@ -191,7 +192,7 @@ class WebSocketService {
   }
 
   // Helper method to calculate week data (last 7 days, grouped by day)
-  private calculateWeekData(allEvents: any[], now: Date): Array<{timestamp: string; count: number}> {
+  private calculateWeekData(allEvents: EventWithReceivedAt[], now: Date): Array<{timestamp: string; count: number}> {
     const dailyData = new Map<string, number>();
     const oneWeekAgo = subDays(now, 7);
     
@@ -219,8 +220,8 @@ class WebSocketService {
   }
 
   // Helper method to calculate top event types for a specific time range
-  private calculateTopEventTypes(allEvents: any[], now: Date, timeRange: 'hour' | 'day' | 'week'): Array<{type: string; count: number; percentage: number}> {
-    let filteredEvents: any[] = [];
+  private calculateTopEventTypes(allEvents: EventWithReceivedAt[], now: Date, timeRange: 'hour' | 'day' | 'week'): Array<{type: string; count: number; percentage: number}> {
+    let filteredEvents: EventWithReceivedAt[] = [];
     
     switch (timeRange) {
       case 'hour': {

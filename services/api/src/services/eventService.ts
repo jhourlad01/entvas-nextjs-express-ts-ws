@@ -210,52 +210,17 @@ export class EventService {
    * @param receivedAt - Timestamp when the event was received
    * @param source - Source identifier (e.g., 'webhook')
    */
-  public static async logEventDetails(event: Event, receivedAt: Date, source: string): Promise<void> {
-    try {
-      const [statistics, totalCount] = await Promise.all([
-        this.getEventStatistics(),
-        this.getEventCount()
-      ]);
-      
-      console.log(`[${new Date().toISOString()}] Event received from ${source}:`);
-      console.log(`  Event ID: ${event.userId}-${event.timestamp}`);
-      console.log(`  Type: ${event.eventType}`);
-      console.log(`  User ID: ${event.userId}`);
-      console.log(`  Timestamp: ${event.timestamp}`);
-      console.log(`  Received at: ${receivedAt.toISOString()}`);
-      
-      if (event.metadata) {
-        console.log('  Metadata:', event.metadata);
-      }
-      
-      console.log('  Event Type Counts:');
-      Object.entries(statistics).forEach(([eventType, count]) => {
-        console.log(`    ${eventType}: ${count}`);
-      });
-      console.log(`  Total Events: ${totalCount}`);
-      console.log(`  Invalid Events: ${this.getInvalidEventsCount()}`);
-      console.log('---');
-    } catch (error) {
-      console.error('Error logging event details:', error);
-    }
+  public static async logEventDetails(_event: Event, _receivedAt: Date, _source: string): Promise<void> {
+    // Logging removed for production
   }
 
   /**
    * Increments invalid events count and prints detailed logs for validation failures
    * @param errors - Array of validation error details
    */
-  public static logValidationFailure(errors: ValidationErrorDetail[]): void {
+  public static logValidationFailure(_errors: ValidationErrorDetail[]): void {
     this.invalidEventsCount++;
-    
-    console.log(`[${new Date().toISOString()}] Validation failed:`);
-    console.log(`  Invalid Events Count: ${this.getInvalidEventsCount()}`);
-    
-    errors.forEach(error => {
-      const fieldPath = error.path.join('.');
-      console.log(`  Field: ${fieldPath} - ${error.message}`);
-    });
-    
-    console.log('---');
+    // Detailed logging removed for production
   }
 
   /**
