@@ -148,40 +148,19 @@ export default function Home() {
     })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, []);
 
-  // Calculate global maximum Y-axis value across all organizations and time ranges
+  // Calculate global maximum Y-axis value based on total event count (without filter) rounded up to next 50
   const calculateGlobalMaxY = useCallback(() => {
-    if (!rawEvents.length) return 10; // Default max if no data
+    // Use total events count from stats (without any filter)
+    const totalEventCount = stats.totalEvents || 0;
     
-    const now = new Date();
-    let globalMax = 0;
+    if (totalEventCount === 0) return 50; // Default max if no data
     
-    // Get all unique organization IDs (including null for unassigned events)
-    const organizationIds = [...new Set(rawEvents.map(event => event.organizationId))];
+    // Round up to the next 50
+    const roundedMax = Math.ceil((totalEventCount + 1) / 50) * 50;
     
-    // Calculate max for each organization across all time ranges
-    organizationIds.forEach(orgId => {
-      const orgEvents = orgId ? rawEvents.filter(event => event.organizationId === orgId) : rawEvents;
-      
-      // Calculate for hour view
-      const hourData = calculateHourData(orgEvents, now);
-      const hourMax = Math.max(...hourData.map(d => d.count), 0);
-      
-      // Calculate for day view
-      const dayData = calculateDayData(orgEvents, now);
-      const dayMax = Math.max(...dayData.map(d => d.count), 0);
-      
-      // Calculate for week view
-      const weekData = calculateWeekData(orgEvents, now);
-      const weekMax = Math.max(...weekData.map(d => d.count), 0);
-      
-      // Update global max
-      globalMax = Math.max(globalMax, hourMax, dayMax, weekMax);
-    });
-    
-    // Add some padding (20% of max value, minimum 1)
-    const padding = Math.max(1, Math.ceil(globalMax * 0.2));
-    return globalMax + padding;
-  }, [rawEvents, calculateHourData, calculateDayData, calculateWeekData]);
+    // Ensure minimum value of 50
+    return Math.max(50, roundedMax);
+  }, [stats.totalEvents]);
 
   // Function to get pre-segmented data for a time range
   const getSegmentedData = useCallback((timeRange: TimeRange) => {

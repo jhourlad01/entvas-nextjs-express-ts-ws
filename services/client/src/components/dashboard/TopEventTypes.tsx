@@ -34,6 +34,8 @@ export default function TopEventTypes({
   data, 
   title = "Top 5 Event Types" 
 }: TopEventTypesProps) {
+  // Calculate total events
+  const totalEvents = data.reduce((sum, item) => sum + item.count, 0);
   const chartRef = useRef<ChartJS<'pie'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartDimensions, setChartDimensions] = useState({ width: 300, height: 300 });
@@ -214,6 +216,37 @@ export default function TopEventTypes({
                     />
                   </ListItem>
                 ))}
+                {/* Total Events Row */}
+                <ListItem 
+                  sx={{ 
+                    px: 0, 
+                    py: { xs: 0.5, md: 1 },
+                    borderTop: '2px solid',
+                    borderColor: 'divider',
+                    backgroundColor: 'action.hover'
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: { xs: 30, md: 40 } }}>
+                    <Circle 
+                      sx={{ 
+                        color: '#757575',
+                        fontSize: { xs: 10, md: 12 }
+                      }} 
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1rem' } }}>
+                          Total
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                          {totalEvents.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItem>
               </List>
             </Box>
           </Box>

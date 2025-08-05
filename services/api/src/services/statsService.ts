@@ -1,4 +1,5 @@
 import prisma from './prismaService';
+import { FilterService } from './filterService';
 import { TimeFilter } from '../types';
 
 interface StatsResult {
@@ -20,22 +21,7 @@ export class StatsService {
    * Calculate real-time statistics (fallback)
    */
   static async calculateRealTimeStats(filter: TimeFilter): Promise<StatsResult> {
-    const now = new Date();
-    let periodStart: Date;
-
-    switch (filter) {
-      case 'hour':
-        periodStart = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case 'day':
-        periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case 'week':
-        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        periodStart = new Date(now.getTime() - 60 * 60 * 1000);
-    }
+    const periodStart = FilterService.getCutoffTime(filter);
 
     const stats = await prisma.event.groupBy({
       by: ['eventType'],

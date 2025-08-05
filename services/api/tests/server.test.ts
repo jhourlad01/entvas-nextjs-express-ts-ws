@@ -133,11 +133,11 @@ describe('Server', () => {
     expect(response.body.data).toHaveProperty('filter', 'week');
   });
 
-  test('GET /events with invalid filter should return 400', async () => {
+  test('GET /events with invalid filter should default to hour filter', async () => {
     const response = await request(app).get('/events?filter=invalid');
-    expect(response.status).toBe(400);
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toContain('Invalid filter parameter');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('filter', 'hour');
   });
 
   test('GET /events/stats with filter=hour should return filtered statistics', async () => {

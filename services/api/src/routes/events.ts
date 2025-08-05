@@ -1,6 +1,7 @@
 import { Router, Response, Request } from 'express';
 import { EventService } from '../services/eventService';
 import { OrganizationService } from '../services/organizationService';
+import { FilterService } from '../services/filterService';
 import { ApiResponse, EventStatistics } from '../types';
 import { authenticateToken } from '../middleware/auth';
 import { AuthenticatedRequest } from '../types/auth';
@@ -45,29 +46,9 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       }
     }
 
-    // Apply time-based filtering (default to hour if no filter specified)
-    const filterValue = filter && typeof filter === 'string' ? filter : 'hour';
-    const now = new Date();
-    let cutoffTime: Date;
-
-    switch (filterValue) {
-      case 'hour':
-        cutoffTime = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-        break;
-      case 'day':
-        cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
-        break;
-      case 'week':
-        cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
-        break;
-      default:
-        res.status(400).json({
-          success: false,
-          message: 'Invalid filter parameter. Must be "hour", "day", or "week"'
-        });
-        return;
-    }
-
+    // Apply time-based filtering using shared service
+    const filterValue = FilterService.parseTimeFilter(filter as string);
+    const cutoffTime = FilterService.getCutoffTime(filterValue);
     events = events.filter(event => event.receivedAt >= cutoffTime);
 
     const response: ApiResponse = {
@@ -130,29 +111,9 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
       }
     }
 
-    // Apply time-based filtering (default to hour if no filter specified)
-    const filterValue = filter && typeof filter === 'string' ? filter : 'hour';
-    const now = new Date();
-    let cutoffTime: Date;
-
-    switch (filterValue) {
-      case 'hour':
-        cutoffTime = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-        break;
-      case 'day':
-        cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
-        break;
-      case 'week':
-        cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
-        break;
-      default:
-        res.status(400).json({
-          success: false,
-          message: 'Invalid filter parameter. Must be "hour", "day", or "week"'
-        });
-        return;
-    }
-
+    // Apply time-based filtering using shared service
+    const filterValue = FilterService.parseTimeFilter(filter as string);
+    const cutoffTime = FilterService.getCutoffTime(filterValue);
     events = events.filter(event => event.receivedAt >= cutoffTime);
 
     // Calculate statistics for filtered events
